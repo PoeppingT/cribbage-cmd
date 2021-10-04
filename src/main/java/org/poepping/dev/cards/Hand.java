@@ -12,10 +12,30 @@
  * limitations under the License.
  */
 
-package org.poepping.dev;
+package org.poepping.dev.cards;
 
-public class Main {
-  public static void main(String[] args) {
+import java.util.ArrayList;
 
+public class Hand {
+  private final ArrayList<Card> cards;
+
+  public Hand() {
+    cards = new ArrayList<>();
+  }
+
+  public void clear() {
+    cards.clear();
+  }
+
+  public void add(Card card) {
+    cards.add(card);
+  }
+
+  public void remove(Card card) {
+    cards.remove(card);
+  }
+
+  public boolean outOfCards() {
+    return cards.isEmpty();
   }
 }

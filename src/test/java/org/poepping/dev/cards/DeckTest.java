@@ -12,10 +12,28 @@
  * limitations under the License.
  */
 
-package org.poepping.dev;
+package org.poepping.dev.cards;
 
-public class Main {
-  public static void main(String[] args) {
+import org.junit.Test;
 
+public class DeckTest {
+
+  @Test
+  public void deckTest() {
+    Deck deck = Deck.standard();
+    System.out.println(deck);
+    printDraw5(deck);
+    for (int i = 0; i < 5 ; i++) {
+      deck.shuffle();
+      System.out.println(deck);
+      printDraw5(deck);
+    }
+  }
+
+  private void printDraw5(Deck deck) {
+    for (int i = 0 ; i < 5 ; i++) {
+      System.out.print(deck.draw() + " ");
+    }
+    System.out.println();
   }
 }
