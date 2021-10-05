@@ -61,7 +61,7 @@
         <version>${checkstyle.version}</version>
         <configuration>
           <encoding>UTF-8</encoding>
-          <configLocation>google_checks.xml</configLocation>
+          <configLocation>src/main/resources/checkstyle.xml</configLocation>
           <consoleOutput>true</consoleOutput>
           <failsOnError>true</failsOnError>
           <failOnViolation>true</failOnViolation>

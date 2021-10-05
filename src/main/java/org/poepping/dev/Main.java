@@ -16,6 +16,8 @@ package org.poepping.dev;
 
 public class Main {
   public static void main(String[] args) {
+    System.out.println("Hello, you have ran the main function. Starting cribbage...");
 
+    CribbageGame.builder().build().run();
   }
 }

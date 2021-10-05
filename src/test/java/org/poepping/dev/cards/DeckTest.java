@@ -20,20 +20,6 @@ public class DeckTest {
 
   @Test
   public void deckTest() {
-    Deck deck = Deck.standard();
-    System.out.println(deck);
-    printDraw5(deck);
-    for (int i = 0; i < 5 ; i++) {
-      deck.shuffle();
-      System.out.println(deck);
-      printDraw5(deck);
-    }
-  }
-
-  private void printDraw5(Deck deck) {
-    for (int i = 0 ; i < 5 ; i++) {
-      System.out.print(deck.draw() + " ");
-    }
-    System.out.println();
+    // do nothing for now
   }
 }

@@ -17,29 +17,31 @@ package org.poepping.dev;
 import org.poepping.dev.cards.Card;
 import org.poepping.dev.cards.Deck;
 import org.poepping.dev.cards.Hand;
-import org.poepping.dev.player.AICribbagePlayer;
+import org.poepping.dev.gamelogic.Scoring;
+import org.poepping.dev.gamelogic.exceptions.GameOverException;
+import org.poepping.dev.player.AiCribbagePlayer;
 import org.poepping.dev.player.CribbagePlayer;
 import org.poepping.dev.player.HumanCribbagePlayer;
 
-import java.util.Optional;
+import java.io.IOException;
+import java.util.*;
 
 public class CribbageGame implements Runnable {
-
-  private static final int DEFAULT_SCORE_TO_WIN = 121;
-
   private boolean doQuit = false;
   // cribbage is always played with a standard deck
   private final Deck deck = Deck.standard();
+  private final Scoring scoring;
 
   private GameState gameState;
   private Card cutCard;
-  private int scoreToWin;
   private int runningCount;
+  private Stack<Card> runningCards;
   private boolean aiTurn;
   private boolean aiCrib;
   // for now, we assume one AI player and one human player. can be extended for 3-handed or 4-handed
   private CribbagePlayer aiPlayer;
   private CribbagePlayer humanPlayer;
+  private boolean lastPlayerChecked = false;
 
   enum GameState {
     DEAL,
@@ -51,9 +53,11 @@ public class CribbageGame implements Runnable {
   }
 
   private CribbageGame(int scoreToWin, boolean aiCribFirst) {
-    this.scoreToWin = scoreToWin;
+    scoring = new Scoring(scoreToWin);
+    runningCount = 0;
+    runningCards = new Stack<>();
     aiCrib = aiCribFirst;
-    aiPlayer = new AICribbagePlayer("AI");
+    aiPlayer = new AiCribbagePlayer("AI");
     humanPlayer = new HumanCribbagePlayer("HUMAN");
     gameState = GameState.DEAL;
   }
@@ -61,16 +65,17 @@ public class CribbageGame implements Runnable {
   @Override
   public void run() {
     // infinite loop of gametime? game loop.
-    while(!doQuit) {
+    while (!doQuit) {
       // we check whether the game is over every time we award points
-      printGameState();
-      switch(gameState) {
+      switch (gameState) {
         case DEAL: {
           // reset player hands, shuffle the deck, deal out 6 cards to each player
           aiCrib = !aiCrib;
           aiTurn = !aiCrib;
           aiPlayer.reset();
           humanPlayer.reset();
+          runningCards.clear();
+          runningCount = 0;
           cutCard = null;
           deck.shuffle();
           if (aiCrib) {
@@ -90,6 +95,7 @@ public class CribbageGame implements Runnable {
           break;
         }
         case DISCARD_TO_CRIB: {
+          printGameState();
           Hand crib = aiCrib ? aiPlayer.getCrib() : humanPlayer.getCrib();
           aiPlayer.discardToCrib(crib, 2);
           humanPlayer.discardToCrib(crib, 2);
@@ -99,58 +105,121 @@ public class CribbageGame implements Runnable {
         case FLIP_CUT_CARD: {
           // TODO implement actual cutting
           cutCard = deck.draw();
+          System.out.println(cutCard + " cut.");
+          if (cutCard.getValue().equals(Card.Value.JACK)) {
+            CribbagePlayer dealer = aiCrib ? aiPlayer : humanPlayer;
+            System.out.println(cutCard + " cut! Awarding 2 points to " + dealer);
+            givePointsAndMaybeEndGame(dealer, 2);
+          }
+          gameState = GameState.PLAY_CARD;
           break;
         }
         case PLAY_CARD: {
+          printGameState();
           CribbagePlayer player = aiTurn ? aiPlayer : humanPlayer;
-          Optional<Card> cardPlayed = player.playCard();
+          // assuming here that playCard returns a legal card to play. responsibility is on the player
+          Optional<Card> cardPlayed = player.playCard(31 - runningCount);
           if (cardPlayed.isPresent()) {
             System.out.println(player.getName() + " played " + cardPlayed.get());
-            // TODO did they get points?
+            try {
+              scoring.peggingPlay(player, runningCount, runningCards, cardPlayed.get());
+            } catch (GameOverException goe) {
+              System.out.println(goe.getMessage());
+              doQuit = true;
+            }
+            runningCards.add(cardPlayed.get());
             runningCount += cardPlayed.get().getValue().getValue();
+            if (runningCount >= 31) {
+              runningCount = 0;
+            }
           } else {
-            System.out.println(player.getName() + " checks");
+            System.out.println(player.getName() + ": checks");
+            if (lastPlayerChecked) {
+              // TODO this logic doesn't work
+              // both check. award one point to this player and continue
+              System.out.println("Both players check. Awarding " + player + " 1 point.");
+              givePointsAndMaybeEndGame(player, 1);
+              lastPlayerChecked = false;
+              runningCount = 0;
+              runningCards.clear();
+            }
+            lastPlayerChecked = true;
           }
           aiTurn = !aiTurn;
           if (aiPlayer.outOfCards() && humanPlayer.outOfCards()) {
             gameState = GameState.SCORE_HANDS;
+            if (cardPlayed.isPresent()) {
+              // that means this player just played the last card
+              System.out.println(player + ": last card for 1");
+              givePointsAndMaybeEndGame(player, 1);
+            }
           }
           break;
         }
         case SCORE_HANDS: {
+          try {
+            if (aiCrib) {
+              scoring.scoreHand(humanPlayer, cutCard);
+              scoring.scoreHand(aiPlayer, cutCard);
+            } else {
+              scoring.scoreHand(aiPlayer, cutCard);
+              scoring.scoreHand(humanPlayer, cutCard);
+            }
+          } catch (GameOverException goe) {
+            System.out.println(goe.getMessage());
+            doQuit = true;
+          }
+          printGameState();
+          gameState = GameState.SCORE_CRIB;
           break;
         }
         case SCORE_CRIB: {
+          // theoretically the crib is empty if it isn't your crib, but let's not take chances
+          try {
+            if (aiCrib) {
+              scoring.scoreCrib(aiPlayer, cutCard);
+            } else {
+              scoring.scoreCrib(humanPlayer, cutCard);
+            }
+          } catch (GameOverException goe) {
+            System.out.println(goe.getMessage());
+            doQuit = true;
+          }
+          printGameState();
+          gameState = GameState.DEAL;
           break;
         }
         default: {
           // impossible to reach. adding a default statement to make checkstyle happy
         }
       }
+      humanPlayer.waitToContinue();
+    }
+  }
+
+  private void givePointsAndMaybeEndGame(CribbagePlayer player, int points) {
+    try {
+      scoring.givePoints(player, points);
+    } catch (GameOverException goe) {
+      System.out.println(goe.getMessage());
+      doQuit = true;
     }
   }
 
   private void printGameState() {
-    // scoreboard or representation of cribbage board?
-    System.out.println(aiPlayer.scoreboard());
-    System.out.println(humanPlayer.scoreboard());
-    // who's crib is it?
-    System.out.println((aiCrib ? aiPlayer.getName() : humanPlayer.getName()) + "'s crib");
-    // what's the cut card?
-    System.out.println("cut: " + (cutCard != null ? cutCard : ""));
-    // what's the running count?
+    System.out.println("\n================================\n"
+        + aiPlayer.scoreboard(aiCrib) + "\t\t" + humanPlayer.scoreboard(!aiCrib)
+        + "\n================================\n");
     if (gameState == GameState.PLAY_CARD) {
-      System.out.println("\nCount: " + runningCount);
+      System.out.println("Count: " + runningCount + "\n");
+    }
+    if (gameState == GameState.SCORE_CRIB
+        || gameState == GameState.SCORE_HANDS) {
+      System.out.println("cut: " + (cutCard != null ? cutCard : ""));
     }
   }
 
-  private void givePoints(CribbagePlayer player, int points) {
-    player.addPoints(points);
-    if (player.getScore() >= scoreToWin) {
-      System.out.println(player + " wins!");
-      doQuit = true;
-    }
-  }
+
 
   public static Builder builder() {
     return new Builder();
@@ -158,7 +227,7 @@ public class CribbageGame implements Runnable {
 
   static class Builder {
     // ai level, score to win, display strategy, how many players,
-    int scoreToWin = DEFAULT_SCORE_TO_WIN;
+    int scoreToWin = Scoring.DEFAULT_POINTS_TO_WIN;
     boolean aiCribFirst = true;
 
     private Builder() {

@@ -1,8 +1,13 @@
 package org.poepping.dev.player;
 
 import org.poepping.dev.cards.Card;
+import org.poepping.dev.cards.Hand;
+
+import java.util.Scanner;
 
 public class HumanCribbagePlayer extends CribbagePlayer {
+
+  private Scanner in = new Scanner(System.in);
 
   public HumanCribbagePlayer(String name) {
     super(name);
@@ -10,12 +15,49 @@ public class HumanCribbagePlayer extends CribbagePlayer {
 
   @Override
   public Card[] chooseCardsToDiscardToCrib(int numberToDiscard) {
-    return new Card[]{};
+    Card[] discardedCards = new Card[numberToDiscard];
+    Hand tempHand = Hand.copyOf(hand);
+    for (int i = 0; i < numberToDiscard; i++) {
+      System.out.println(tempHand);
+      System.out.println("Choose " + (numberToDiscard - i) + " card(s) to discard to the crib.");
+      discardedCards[i] = chooseCardFromHand(tempHand);
+      tempHand.remove(discardedCards[i]);
+    }
+    return discardedCards;
   }
 
   @Override
-  public Card chooseCardToPlay() {
-    System.out.println();
-    return new Card(Card.Suit.SPADES, Card.Value.ACE);
+  public Card chooseCardToPlay(int numberLeftTo31) {
+    if (!canPlay(numberLeftTo31)) {
+      System.out.println(this + " cannot play!");
+      return null;
+    }
+    System.out.println(hand);
+    System.out.println("Choose a card to play.");
+    while (true) {
+      Card choice = chooseCardFromHand(hand);
+      if (choice.getValue().getValue() > numberLeftTo31) {
+        System.out.println("You must choose a " + numberLeftTo31 + " or less.");
+      } else {
+        return choice;
+      }
+    }
+  }
+
+  private Card chooseCardFromHand(Hand hand) {
+    while (true) {
+      String token = in.next();
+      try {
+        int indexChoice = Integer.parseInt(token);
+        return hand.choose(indexChoice);
+      } catch (NumberFormatException nfe) {
+        System.out.println(token + " is not a number. Try again.");
+      }
+    }
+  }
+
+  public void waitToContinue() {
+    System.out.println("Enter to continue..\n");
+    in.nextLine();
   }
 }

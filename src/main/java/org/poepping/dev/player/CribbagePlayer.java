@@ -17,7 +17,6 @@ package org.poepping.dev.player;
 import org.poepping.dev.cards.Card;
 import org.poepping.dev.cards.Hand;
 
-import java.util.ArrayList;
 import java.util.Optional;
 
 public abstract class CribbagePlayer {
@@ -41,17 +40,31 @@ public abstract class CribbagePlayer {
 
   public void discardToCrib(Hand crib, int numberToDiscard) {
     Card[] cards = chooseCardsToDiscardToCrib(numberToDiscard);
-
+    for (Card card : cards) {
+      crib.add(card);
+      hand.remove(card);
+    }
   }
 
   /**
    * should be null to indicate that no card can be played
    * @return
    */
-  abstract Card chooseCardToPlay();
+  abstract Card chooseCardToPlay(int numberLeftTo31);
 
-  public Optional<Card> playCard() {
-    Card chosenCard = chooseCardToPlay();
+  public abstract void waitToContinue();
+
+  public boolean canPlay(int numberLeftTo31) {
+    for (Card card : hand) {
+      if (card.getValue().getValue() <= numberLeftTo31) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public Optional<Card> playCard(int numberLeftTo31) {
+    Card chosenCard = chooseCardToPlay(numberLeftTo31);
     if (chosenCard != null) {
       hand.remove(chosenCard);
       discard.add(chosenCard);
@@ -59,8 +72,11 @@ public abstract class CribbagePlayer {
     return chosenCard == null ? Optional.empty() : Optional.of(chosenCard);
   }
 
-  public String scoreboard() {
+  public String scoreboard(boolean myCrib) {
     StringBuilder sb = new StringBuilder();
+    if (myCrib) {
+      sb.append("(c)");
+    }
     sb.append(name);
     sb.append(":");
     sb.append(score);
@@ -68,7 +84,7 @@ public abstract class CribbagePlayer {
   }
 
   public boolean outOfCards() {
-    return hand.
+    return hand.outOfCards();
   }
 
   public void addPoints(int points) {
@@ -99,5 +115,9 @@ public abstract class CribbagePlayer {
     crib.clear();
     discard.clear();
     hand.clear();
+  }
+
+  public String toString() {
+    return getName();
   }
 }

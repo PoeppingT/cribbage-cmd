@@ -14,28 +14,30 @@
 
 package org.poepping.dev.cards;
 
-public class Card {
+public class Card implements Comparable<Card> {
   public enum Value {
-    ACE("A", 1),
-    KING("K", 10),
-    QUEEN("Q", 10),
-    JACK("J", 10),
-    TEN("10", 10),
-    NINE("9", 9),
-    EIGHT("8", 8),
-    SEVEN("7", 7),
-    SIX("6", 6),
-    FIVE("5", 5),
-    FOUR("4", 4),
-    THREE("3", 3),
-    TWO("2", 2);
+    ACE("A", 1, 1),
+    KING("K", 10, 13),
+    QUEEN("Q", 10, 12),
+    JACK("J", 10, 11),
+    TEN("10", 10, 10),
+    NINE("9", 9, 9),
+    EIGHT("8", 8, 8),
+    SEVEN("7", 7, 7),
+    SIX("6", 6, 6),
+    FIVE("5", 5, 5),
+    FOUR("4", 4, 4),
+    THREE("3", 3, 3),
+    TWO("2", 2, 2);
 
     String display;
     int value;
+    int sortValue;
 
-    Value(String display, int value) {
+    Value(String display, int value, int sortValue) {
       this.display = display;
       this.value = value;
+      this.sortValue = sortValue;
     }
 
     public int getValue() {
@@ -87,5 +89,14 @@ public class Card {
 
   public boolean equals(Card other) {
     return this.suit == other.suit && this.value == other.value;
+  }
+
+  @Override
+  public int compareTo(Card other) {
+    return Integer.compare(this.getValue().sortValue, other.getValue().sortValue);
+  }
+
+  public int distanceTo(Card other) {
+    return other.getValue().sortValue - this.getValue().sortValue;
   }
 }

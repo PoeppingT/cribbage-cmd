@@ -15,12 +15,21 @@
 package org.poepping.dev.cards;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
-public class Hand {
+public class Hand implements Iterable<Card> {
   private final ArrayList<Card> cards;
 
   public Hand() {
     cards = new ArrayList<>();
+  }
+
+  public static Hand copyOf(Hand hand) {
+    Hand newHand = new Hand();
+    for (Card card : hand) {
+      newHand.add(card);
+    }
+    return newHand;
   }
 
   public void clear() {
@@ -37,5 +46,27 @@ public class Hand {
 
   public boolean outOfCards() {
     return cards.isEmpty();
+  }
+
+  public Card choose(int choice) {
+    return cards.get(choice);
+  }
+
+  public int size() {
+    return cards.size();
+  }
+
+  public Iterator<Card> iterator() {
+    return cards.iterator();
+  }
+
+  public String toString() {
+    StringBuilder indices = new StringBuilder();
+    StringBuilder cardDisplays = new StringBuilder();
+    for (int i = 0; i < cards.size(); i++) {
+      indices.append(i + "\t");
+      cardDisplays.append(cards.get(i) + "\t");
+    }
+    return indices + "\n" + cardDisplays;
   }
 }
