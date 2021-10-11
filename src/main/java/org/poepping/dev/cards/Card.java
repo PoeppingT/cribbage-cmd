@@ -51,7 +51,13 @@ public class Card implements Comparable<Card> {
         }
       }
       throw new IllegalArgumentException(
-          String.format("There is no card matching \"%s\"", display));
+          String.format("There is no card value matching \"%s\"", display));
+    }
+
+    public boolean equals(Value other) {
+      return this.display.equalsIgnoreCase(other.display)
+          && this.value == other.value
+          && this.sortValue == other.sortValue;
     }
   }
 
@@ -64,6 +70,16 @@ public class Card implements Comparable<Card> {
     String display;
     Suit(String display) {
       this.display = display;
+    }
+
+    static Suit fromDisplay(String display) {
+      for (Suit suit : Suit.values()) {
+        if (suit.display.equalsIgnoreCase(display)) {
+          return suit;
+        }
+      }
+      throw new IllegalArgumentException(
+          String.format("There is no suit matching \"%s\"", display));
     }
   }
 
@@ -98,5 +114,14 @@ public class Card implements Comparable<Card> {
 
   public int distanceTo(Card other) {
     return other.getValue().sortValue - this.getValue().sortValue;
+  }
+
+  public static Card fromString(String s) {
+    if (s.length() < 2) {
+      return null;
+    }
+    Suit suit = Suit.fromDisplay(s.substring(0, 1));
+    Value value = Value.fromDisplay(s.substring(1));
+    return new Card(suit, value);
   }
 }

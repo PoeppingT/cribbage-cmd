@@ -1,18 +1,20 @@
 package org.poepping.dev.gamelogic;
 
 import org.poepping.dev.cards.Card;
+import org.poepping.dev.cards.Hand;
 import org.poepping.dev.gamelogic.exceptions.GameOverException;
 import org.poepping.dev.player.CribbagePlayer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.EmptyStackException;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * Utility holding scoring logic
  */
 public final class Scoring {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(Scoring.class);
   public static final int DEFAULT_POINTS_TO_WIN = 121;
 
   private final int pointsToWin;
@@ -26,14 +28,125 @@ public final class Scoring {
   }
 
   public void scoreHand(CribbagePlayer player, Card cutCard) throws GameOverException {
-    System.out.println("Scoring hand for " + player + "...");
-    // really scoring discard
-    System.out.println("NOT IMPLEMENTED!");
+    int handPoints = scoreInternal(player.getDiscard(), cutCard, false);
+    System.out.println(player + "'s hand scores " + handPoints);
+    givePoints(player, handPoints);
   }
   
   public void scoreCrib(CribbagePlayer player, Card cutCard) throws GameOverException {
-    System.out.println("Scoring crib for " + player + "...");
-    System.out.println("NOT IMPLEMENTED!");
+    int cribPoints = scoreInternal(player.getCrib(), cutCard, true);
+    System.out.println(player + "'s crib scores " + cribPoints);
+    givePoints(player, cribPoints);
+  }
+
+  private int scoreInternal(Hand hand, Card cutCard, boolean isCrib) {
+    Hand handAndCut = Hand.copyOf(hand);
+    handAndCut.add(cutCard);
+    int score = 0;
+    // 15
+    score += 2 * (howMany15s(handAndCut));
+    // pairs
+    score += 2 * (howManyPairs(handAndCut));
+    // runs
+    score += pointsFromRuns(handAndCut);
+    // flushes
+    score += pointsFromFlushes(hand, cutCard, isCrib);
+    return score;
+  }
+
+  int howMany15s(Hand cards) {
+    return howMany15s(cards, new Hand());
+  }
+
+  private int howMany15s(Hand cards, Hand handSoFar) {
+    if (handSoFar.sum() == 15) {
+      return 1;
+    }
+    if (handSoFar.sum() > 15 || cards.size() == 0) {
+      // there will be no card in Cards that we could add to make sum = 15
+      return 0;
+    }
+    int num15s = 0;
+    Hand cardsLeft = Hand.copyOf(cards);
+    Card card = cards.choose(0);
+    cardsLeft.remove(card);
+    num15s += howMany15s(cardsLeft, handSoFar.add(card));
+    num15s += howMany15s(cardsLeft, handSoFar.remove(card));
+    return num15s;
+  }
+
+  int howManyPairs(Hand cards) {
+    int numPairs = 0;
+    for (int i = 0; i < cards.size(); i++) {
+      for (int j = i + 1; j < cards.size(); j++) {
+        if (cards.choose(i).getValue().equals(cards.choose(j).getValue())) {
+          numPairs++;
+        }
+      }
+    }
+    return numPairs;
+  }
+
+  int pointsFromRuns(Hand cards) {
+    // you can only have a maximum of a 5 card run
+    // so, just sort according to sortOrder, like we did in peggingPlay
+    LinkedList<Card> run = new LinkedList<>();
+    int multiplier = 1;
+    for (Card card : Hand.copyOf(cards).sorted()) {
+      if (run.size() == 0) {
+        run.add(card);
+      } else {
+        int distanceFromRunToNext = run.getLast().distanceTo(card);
+        if (distanceFromRunToNext == 0) {
+          // we've found a pair, so multiply if we find a run with this card
+          // but *don't* add it to the run
+          multiplier++;
+        } else {
+          if (distanceFromRunToNext != 1) {
+            // we've found a gap, so try a new run
+            // but wait, TODO only try a new run if we didn't already find one.
+            if (run.size() >= 3) {
+              // if we found a run, we've found the end. so quit looping.
+              break;
+            }
+            // otherwise, we need to see if there's a run to find.
+            // luckily there's no way to find two disjoint runs.
+            // TODO interview question? lol
+            multiplier = 1;
+            run.clear();
+          }
+          run.add(card);
+        }
+      }
+    }
+    // can only have a run of 3, 4, or 5
+    if (run.size() >= 3) {
+      return multiplier * run.size();
+    }
+    return 0;
+  }
+
+  int pointsFromFlushes(Hand hand, Card cutCard, boolean isCrib) {
+    if (hand.size() != 4) {
+      return 0;
+    }
+    Card.Suit flushSuit = null;
+    for (Card card : hand) {
+      if (flushSuit == null) {
+        flushSuit = card.getSuit();
+      }
+      if (!card.getSuit().equals(flushSuit)) {
+        return 0;
+      }
+    }
+    // all cards in the hand match flushSuit
+    if (cutCard.getSuit().equals(flushSuit)) {
+      return 5;
+    } else if (!isCrib) {
+      return 4;
+    } else {
+      return 0;
+    }
   }
   
   public void peggingPlay(
@@ -42,13 +155,6 @@ public final class Scoring {
       Stack<Card> cardsPlayed,
       Card cardPlayed) throws GameOverException {
     final int cardsInRunningCards = cardsPlayed.size();
-    // TODO did they
-    //  - pair, 3oa-kind, 4oa-kind
-    //  - runo3, runo4, runo5
-    //  - 15 or 31
-    // assume that runningCount and cardsPlayed has NOT been edited yet, and cardPlayed is going on top
-    // that's a bad assumption to make, TODO fix that
-
     // PAIRS in cribbage:
     // 1 pair is 2 points
     // 2 pairs is 6 points

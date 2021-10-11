@@ -15,13 +15,23 @@
 package org.poepping.dev.cards;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 
 public class Hand implements Iterable<Card> {
   private final ArrayList<Card> cards;
 
+  private int sum = 0;
+
   public Hand() {
     cards = new ArrayList<>();
+  }
+
+  public Hand(Card... cards) {
+    this.cards = new ArrayList<>(Arrays.asList(cards));
+    for (Card card : cards) {
+      sum += card.getValue().getValue();
+    }
   }
 
   public static Hand copyOf(Hand hand) {
@@ -32,16 +42,26 @@ public class Hand implements Iterable<Card> {
     return newHand;
   }
 
-  public void clear() {
+  public Hand clear() {
     cards.clear();
+    return this;
   }
 
-  public void add(Card card) {
+  public Hand add(Card card) {
     cards.add(card);
+    sum += card.getValue().getValue();
+    return this;
   }
 
-  public void remove(Card card) {
+  public Hand remove(Card card) {
     cards.remove(card);
+    sum -= card.getValue().getValue();
+    return this;
+  }
+
+  public Hand sorted() {
+    cards.sort(Card::compareTo);
+    return this;
   }
 
   public boolean outOfCards() {
@@ -56,6 +76,10 @@ public class Hand implements Iterable<Card> {
     return cards.size();
   }
 
+  public int sum() {
+    return sum;
+  }
+
   public Iterator<Card> iterator() {
     return cards.iterator();
   }
@@ -68,5 +92,16 @@ public class Hand implements Iterable<Card> {
       cardDisplays.append(cards.get(i) + "\t");
     }
     return indices + "\n" + cardDisplays;
+  }
+
+  public String debugString() {
+    String out = "[";
+    for (int i = 0; i < size(); i++) {
+      out += choose(i).toString();
+      if (i != (size() - 1)) {
+        out += ",";
+      }
+    }
+    return out + "]";
   }
 }
