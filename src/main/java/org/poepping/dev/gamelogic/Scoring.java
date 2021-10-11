@@ -29,13 +29,17 @@ public final class Scoring {
 
   public void scoreHand(CribbagePlayer player, Card cutCard) throws GameOverException {
     int handPoints = scoreInternal(player.getDiscard(), cutCard, false);
+    System.out.println(player.getDiscard().debugString() + " | " + cutCard.toString());
     System.out.println(player + "'s hand scores " + handPoints);
+    System.out.println();
     givePoints(player, handPoints);
   }
   
   public void scoreCrib(CribbagePlayer player, Card cutCard) throws GameOverException {
     int cribPoints = scoreInternal(player.getCrib(), cutCard, true);
+    System.out.println(player.getCrib().debugString() + " | " + cutCard.toString());
     System.out.println(player + "'s crib scores " + cribPoints);
+    System.out.println();
     givePoints(player, cribPoints);
   }
 

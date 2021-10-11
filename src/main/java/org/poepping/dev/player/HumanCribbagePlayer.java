@@ -57,7 +57,8 @@ public class HumanCribbagePlayer extends CribbagePlayer {
   }
 
   public void waitToContinue() {
-    System.out.println("Enter to continue..\n");
-    in.nextLine();
+    // System.out.println("Enter to continue..\n");
+    // in.nextLine();
+    // do nothing
   }
 }

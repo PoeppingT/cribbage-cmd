@@ -105,10 +105,10 @@ public class CribbageGame implements Runnable {
         case FLIP_CUT_CARD: {
           // TODO implement actual cutting
           cutCard = deck.draw();
-          System.out.println(cutCard + " cut.");
+          output(cutCard + " cut.");
           if (cutCard.getValue().equals(Card.Value.JACK)) {
             CribbagePlayer dealer = aiCrib ? aiPlayer : humanPlayer;
-            System.out.println(cutCard + " cut! Awarding 2 points to " + dealer);
+            output(cutCard + " cut! Awarding 2 points to " + dealer);
             givePointsAndMaybeEndGame(dealer, 2);
           }
           gameState = GameState.PLAY_CARD;
@@ -120,11 +120,11 @@ public class CribbageGame implements Runnable {
           // assuming here that playCard returns a legal card to play. responsibility is on the player
           Optional<Card> cardPlayed = player.playCard(31 - runningCount);
           if (cardPlayed.isPresent()) {
-            System.out.println(player.getName() + " played " + cardPlayed.get());
+            output(player.getName() + " played " + cardPlayed.get());
             try {
               scoring.peggingPlay(player, runningCount, runningCards, cardPlayed.get());
             } catch (GameOverException goe) {
-              System.out.println(goe.getMessage());
+              output(goe.getMessage());
               doQuit = true;
             }
             runningCards.add(cardPlayed.get());
@@ -132,12 +132,13 @@ public class CribbageGame implements Runnable {
             if (runningCount >= 31) {
               runningCount = 0;
             }
+            lastPlayerChecked = false;
           } else {
-            System.out.println(player.getName() + ": checks");
+            output(player.getName() + ": checks");
             if (lastPlayerChecked) {
               // TODO this logic doesn't work
               // both check. award one point to this player and continue
-              System.out.println("Both players check. Awarding " + player + " 1 point.");
+              output("Both players check. Awarding " + player + " 1 point.");
               givePointsAndMaybeEndGame(player, 1);
               lastPlayerChecked = false;
               runningCount = 0;
@@ -150,7 +151,7 @@ public class CribbageGame implements Runnable {
             gameState = GameState.SCORE_HANDS;
             if (cardPlayed.isPresent()) {
               // that means this player just played the last card
-              System.out.println(player + ": last card for 1");
+              output(player + ": last card for 1");
               givePointsAndMaybeEndGame(player, 1);
             }
           }
@@ -166,10 +167,9 @@ public class CribbageGame implements Runnable {
               scoring.scoreHand(humanPlayer, cutCard);
             }
           } catch (GameOverException goe) {
-            System.out.println(goe.getMessage());
+            output(goe.getMessage());
             doQuit = true;
           }
-          printGameState();
           gameState = GameState.SCORE_CRIB;
           break;
         }
@@ -182,7 +182,7 @@ public class CribbageGame implements Runnable {
               scoring.scoreCrib(humanPlayer, cutCard);
             }
           } catch (GameOverException goe) {
-            System.out.println(goe.getMessage());
+            output(goe.getMessage());
             doQuit = true;
           }
           printGameState();
@@ -201,25 +201,33 @@ public class CribbageGame implements Runnable {
     try {
       scoring.givePoints(player, points);
     } catch (GameOverException goe) {
-      System.out.println(goe.getMessage());
+      output(goe.getMessage());
       doQuit = true;
     }
   }
 
   private void printGameState() {
-    System.out.println("\n================================\n"
+    System.out.println("================================\n"
         + aiPlayer.scoreboard(aiCrib) + "\t\t" + humanPlayer.scoreboard(!aiCrib)
-        + "\n================================\n");
+        + "\n================================");
     if (gameState == GameState.PLAY_CARD) {
-      System.out.println("Count: " + runningCount + "\n");
+      System.out.println("Count: " + runningCount);
     }
     if (gameState == GameState.SCORE_CRIB
         || gameState == GameState.SCORE_HANDS) {
       System.out.println("cut: " + (cutCard != null ? cutCard : ""));
     }
+    System.out.println();
   }
 
-
+  private void output(String message) {
+    System.out.println(message);
+    try {
+      Thread.sleep(500L);
+    } catch (InterruptedException ignored) {
+      // ignored
+    }
+  }
 
   public static Builder builder() {
     return new Builder();
