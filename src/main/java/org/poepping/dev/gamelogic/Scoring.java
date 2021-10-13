@@ -31,7 +31,6 @@ public final class Scoring {
     int handPoints = scoreInternal(player.getDiscard(), cutCard, false);
     System.out.println(player.getDiscard().debugString() + " | " + cutCard.toString());
     System.out.println(player + "'s hand scores " + handPoints);
-    System.out.println();
     givePoints(player, handPoints);
   }
   
