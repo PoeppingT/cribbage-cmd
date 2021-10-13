@@ -18,6 +18,7 @@ import org.poepping.dev.cards.Card;
 import org.poepping.dev.cards.Hand;
 
 import java.util.Optional;
+import java.util.Stack;
 
 public abstract class CribbagePlayer {
   private final String name;
@@ -50,7 +51,7 @@ public abstract class CribbagePlayer {
    * should be null to indicate that no card can be played
    * @return
    */
-  abstract Card chooseCardToPlay(int numberLeftTo31);
+  abstract Card chooseCardToPlay(Stack<Card> runningCards, int numberLeftTo31);
 
   public abstract void waitToContinue();
 
@@ -63,8 +64,8 @@ public abstract class CribbagePlayer {
     return false;
   }
 
-  public Optional<Card> playCard(int numberLeftTo31) {
-    Card chosenCard = chooseCardToPlay(numberLeftTo31);
+  public Optional<Card> playCard(Stack<Card> runningCards, int numberLeftTo31) {
+    Card chosenCard = chooseCardToPlay(runningCards, numberLeftTo31);
     if (chosenCard != null) {
       hand.remove(chosenCard);
       discard.add(chosenCard);
