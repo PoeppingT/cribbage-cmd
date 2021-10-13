@@ -118,7 +118,7 @@ public class CribbageGame implements Runnable {
           printGameState();
           CribbagePlayer player = aiTurn ? aiPlayer : humanPlayer;
           // assuming here that playCard returns a legal card to play. responsibility is on the player
-          Optional<Card> cardPlayed = player.playCard(31 - runningCount);
+          Optional<Card> cardPlayed = player.playCard(runningCards, 31 - runningCount);
           if (cardPlayed.isPresent()) {
             output(player.getName() + " played " + cardPlayed.get());
             try {

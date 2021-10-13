@@ -4,6 +4,7 @@ import org.poepping.dev.cards.Card;
 import org.poepping.dev.cards.Hand;
 
 import java.util.Scanner;
+import java.util.Stack;
 
 public class HumanCribbagePlayer extends CribbagePlayer {
 
@@ -27,11 +28,12 @@ public class HumanCribbagePlayer extends CribbagePlayer {
   }
 
   @Override
-  public Card chooseCardToPlay(int numberLeftTo31) {
+  public Card chooseCardToPlay(Stack<Card> runningCards, int numberLeftTo31) {
     if (!canPlay(numberLeftTo31)) {
       System.out.println(this + " cannot play!");
       return null;
     }
+    System.out.println("Last Played: " + runningCards);
     System.out.println(hand);
     System.out.println("Choose a card to play.");
     while (true) {
