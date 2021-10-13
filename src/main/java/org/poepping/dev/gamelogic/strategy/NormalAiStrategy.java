@@ -12,7 +12,7 @@ public class NormalAiStrategy extends AiStrategy {
   }
 
   @Override
-  public Card chooseCardToPlay(Stack<Card> runningCards, int numberLeftTo31) {
+  public Card chooseCardToPlay(Hand hand, Stack<Card> runningCards, int numberLeftTo31) {
     return null;
   }
 }

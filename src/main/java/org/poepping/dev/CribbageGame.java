@@ -161,10 +161,14 @@ public class CribbageGame implements Runnable {
           try {
             if (aiCrib) {
               scoring.scoreHand(humanPlayer, cutCard);
+              output("");
               scoring.scoreHand(aiPlayer, cutCard);
+              output("");
             } else {
               scoring.scoreHand(aiPlayer, cutCard);
+              output("");
               scoring.scoreHand(humanPlayer, cutCard);
+              output("");
             }
           } catch (GameOverException goe) {
             output(goe.getMessage());
@@ -181,11 +185,11 @@ public class CribbageGame implements Runnable {
             } else {
               scoring.scoreCrib(humanPlayer, cutCard);
             }
+            output("");
           } catch (GameOverException goe) {
             output(goe.getMessage());
             doQuit = true;
           }
-          printGameState();
           gameState = GameState.DEAL;
           break;
         }
@@ -217,13 +221,12 @@ public class CribbageGame implements Runnable {
         || gameState == GameState.SCORE_HANDS) {
       System.out.println("cut: " + (cutCard != null ? cutCard : ""));
     }
-    System.out.println();
   }
 
   private void output(String message) {
     System.out.println(message);
     try {
-      Thread.sleep(500L);
+      Thread.sleep(1000L);
     } catch (InterruptedException ignored) {
       // ignored
     }

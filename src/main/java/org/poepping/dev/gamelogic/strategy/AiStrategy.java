@@ -7,7 +7,8 @@ import java.util.Stack;
 
 public abstract class AiStrategy {
 
-  public static final Level DEFAULT_LEVEL = Level.NORMAL;
+  public static final Level DEFAULT_LEVEL = Level.EASY;
+
   /*
  what does it mean to represent difficulty? strategy. given a situation, how do I choose what to play?
  1. what do you discard at crib?
@@ -47,7 +48,7 @@ public abstract class AiStrategy {
 
   public abstract Card chooseCardToDiscard(Hand hand);
 
-  public abstract Card chooseCardToPlay(Stack<Card> runningCards, int numberLeftTo31);
+  public abstract Card chooseCardToPlay(Hand hand, Stack<Card> runningCards, int numberLeftTo31);
 
   public static AiStrategy defaultStrategy() {
     return DEFAULT_LEVEL.leveledStrategy;
