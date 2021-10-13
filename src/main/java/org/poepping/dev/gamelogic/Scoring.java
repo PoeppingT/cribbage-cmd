@@ -55,6 +55,14 @@ public final class Scoring {
     score += pointsFromRuns(handAndCut);
     // flushes
     score += pointsFromFlushes(hand, cutCard, isCrib);
+    // nubs. this implementation assumes there is only one jack of a given suit.
+    for (Card card : hand) {
+      if (card.getValue().equals(Card.Value.JACK)
+          && card.getSuit().equals(cutCard.getSuit())) {
+        // nubs!
+        score += 1;
+      }
+    }
     return score;
   }
 
