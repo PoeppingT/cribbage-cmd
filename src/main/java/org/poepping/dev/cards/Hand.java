@@ -68,7 +68,7 @@ public class Hand implements Iterable<Card> {
     return cards.isEmpty();
   }
 
-  public Card choose(int choice) {
+  public Card get(int choice) {
     return cards.get(choice);
   }
 
@@ -97,7 +97,7 @@ public class Hand implements Iterable<Card> {
   public String debugString() {
     String out = "[";
     for (int i = 0; i < size(); i++) {
-      out += choose(i).toString();
+      out += get(i).toString();
       if (i != (size() - 1)) {
         out += ",";
       }

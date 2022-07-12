@@ -27,24 +27,64 @@ public final class Scoring {
     this.pointsToWin = pointsToWin;
   }
 
-  public void scoreHand(CribbagePlayer player, Card cutCard) throws GameOverException {
-    int handPoints = scoreInternal(player.getDiscard(), cutCard, false);
-    System.out.println(player.getDiscard().debugString() + " | " + cutCard.toString());
-    System.out.println(player + "'s hand scores " + handPoints);
-    givePoints(player, handPoints);
-  }
-  
-  public void scoreCrib(CribbagePlayer player, Card cutCard) throws GameOverException {
-    int cribPoints = scoreInternal(player.getCrib(), cutCard, true);
-    System.out.println(player.getCrib().debugString() + " | " + cutCard.toString());
-    System.out.println(player + "'s crib scores " + cribPoints);
-    System.out.println();
-    givePoints(player, cribPoints);
+  public static class ScoreEvent {
+    private final int score;
+    private final String message;
+
+    private ScoreEvent(Builder builder) {
+      score = builder.score;
+      message = builder.message;
+    }
+
+    public int score() {
+      return score;
+    }
+
+    public String message() {
+      return message;
+    }
+
+    public static Builder builder() {
+      return new Builder();
+    }
+
+    public static class Builder {
+      private int score = 0;
+      private String message = "No reason /shrug";
+
+      public Builder() {
+
+      }
+
+      public Builder score(int score) {
+        this.score = score;
+        return this;
+      }
+
+      public Builder message(String message) {
+        this.message = message;
+        return this;
+      }
+
+      public ScoreEvent build() {
+        return new ScoreEvent(this);
+      }
+    }
   }
 
-  private int scoreInternal(Hand hand, Card cutCard, boolean isCrib) {
+  public static int scoreHand(Hand hand, Card cutCard) {
+    return scoreCards(hand, cutCard, false);
+  }
+  
+  public static int scoreCrib(Hand hand, Card cutCard) {
+    return scoreCards(hand, cutCard, true);
+  }
+
+  private static int scoreCards(Hand hand, Card cutCard, boolean isCrib) {
     Hand handAndCut = Hand.copyOf(hand);
-    handAndCut.add(cutCard);
+    if (cutCard != null) {
+      handAndCut.add(cutCard);
+    }
     int score = 0;
     // 15
     score += 2 * (howMany15s(handAndCut));
@@ -65,11 +105,11 @@ public final class Scoring {
     return score;
   }
 
-  int howMany15s(Hand cards) {
+  static int howMany15s(Hand cards) {
     return howMany15s(cards, new Hand());
   }
 
-  private int howMany15s(Hand cards, Hand handSoFar) {
+  private static int howMany15s(Hand cards, Hand handSoFar) {
     if (handSoFar.sum() == 15) {
       return 1;
     }
@@ -79,18 +119,18 @@ public final class Scoring {
     }
     int num15s = 0;
     Hand cardsLeft = Hand.copyOf(cards);
-    Card card = cards.choose(0);
+    Card card = cards.get(0);
     cardsLeft.remove(card);
     num15s += howMany15s(cardsLeft, handSoFar.add(card));
     num15s += howMany15s(cardsLeft, handSoFar.remove(card));
     return num15s;
   }
 
-  int howManyPairs(Hand cards) {
+  static int howManyPairs(Hand cards) {
     int numPairs = 0;
     for (int i = 0; i < cards.size(); i++) {
       for (int j = i + 1; j < cards.size(); j++) {
-        if (cards.choose(i).getValue().equals(cards.choose(j).getValue())) {
+        if (cards.get(i).getValue().equals(cards.get(j).getValue())) {
           numPairs++;
         }
       }
@@ -98,7 +138,7 @@ public final class Scoring {
     return numPairs;
   }
 
-  int pointsFromRuns(Hand cards) {
+  static int pointsFromRuns(Hand cards) {
     // you can only have a maximum of a 5 card run
     // so, just sort according to sortOrder, like we did in peggingPlay
     LinkedList<Card> run = new LinkedList<>();
@@ -137,7 +177,7 @@ public final class Scoring {
     return 0;
   }
 
-  int pointsFromFlushes(Hand hand, Card cutCard, boolean isCrib) {
+  static int pointsFromFlushes(Hand hand, Card cutCard, boolean isCrib) {
     if (hand.size() != 4) {
       return 0;
     }
@@ -160,11 +200,13 @@ public final class Scoring {
     }
   }
   
-  public void peggingPlay(
-      CribbagePlayer player,
+  public static ScoreEvent peggingPlay(
       int runningCount,
       Stack<Card> cardsPlayed,
       Card cardPlayed) throws GameOverException {
+    // TODO there's a bug here, I need to create one "ScoringEvent" for this pegging play and sum total while I work
+    // TODO finally finishing by returning one ScoringEvent or null
+
     final int cardsInRunningCards = cardsPlayed.size();
     // PAIRS in cribbage:
     // 1 pair is 2 points
@@ -201,9 +243,10 @@ public final class Scoring {
       } else {
         assert (false);
       }
-      System.out.println(player + ": " + numPairs + (numPairs > 1 ? " pairs " : " pair ")
-          + "for " + pointsToPlayer + "!");
-      givePoints(player, pointsToPlayer);
+      return ScoreEvent.builder()
+          .score(pointsToPlayer)
+          .message(numPairs + (numPairs > 1 ? " pairs " : " pair ") + "for " + pointsToPlayer + "!")
+          .build();
     }
 
     // put the cards back
@@ -251,8 +294,10 @@ public final class Scoring {
     }
     // we've looked at the last 5 cards and found the highest run we could
     if (highestRun > 2) {
-      System.out.println(player + ": run of " + highestRun + " for " + highestRun + "!");
-      givePoints(player, highestRun);
+      return ScoreEvent.builder()
+          .score(highestRun)
+          .message("run of " + highestRun + " for " + highestRun + "!")
+          .build();
     }
 
     // put the cards back
@@ -263,13 +308,19 @@ public final class Scoring {
     assert cardsPlayed.size() == cardsInRunningCards;
 
     if (cardPlayed.getValue().getValue() + runningCount == 15) {
-      System.out.println(player + ": 15 for 2!");
-      givePoints(player, 2);
+      return ScoreEvent.builder()
+          .score(2)
+          .message("15 for 2!")
+          .build();
     }
     if (cardPlayed.getValue().getValue() + runningCount == 31) {
-      System.out.println(player + ": 31 for 2!");
-      givePoints(player, 2);
+      return ScoreEvent.builder()
+          .score(2)
+          .message("31 for 2!")
+          .build();
     }
+    // no points
+    return null;
   }
 
   public void givePoints(CribbagePlayer player, int points) throws GameOverException {

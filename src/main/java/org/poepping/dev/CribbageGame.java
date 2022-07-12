@@ -23,7 +23,6 @@ import org.poepping.dev.player.AiCribbagePlayer;
 import org.poepping.dev.player.CribbagePlayer;
 import org.poepping.dev.player.HumanCribbagePlayer;
 
-import java.io.IOException;
 import java.util.*;
 
 public class CribbageGame implements Runnable {
@@ -122,10 +121,15 @@ public class CribbageGame implements Runnable {
           if (cardPlayed.isPresent()) {
             output(player.getName() + " played " + cardPlayed.get());
             try {
-              scoring.peggingPlay(player, runningCount, runningCards, cardPlayed.get());
+              Scoring.ScoreEvent peggingPoints = Scoring.peggingPlay(runningCount, runningCards, cardPlayed.get());
+              if (peggingPoints != null) {
+                System.out.println(peggingPoints.message());
+                player.addPoints(peggingPoints.score());
+              }
             } catch (GameOverException goe) {
               output(goe.getMessage());
               doQuit = true;
+              break;
             }
             runningCards.add(cardPlayed.get());
             runningCount += cardPlayed.get().getValue().getValue();
@@ -158,38 +162,29 @@ public class CribbageGame implements Runnable {
           break;
         }
         case SCORE_HANDS: {
-          try {
-            if (aiCrib) {
-              scoring.scoreHand(humanPlayer, cutCard);
-              output("");
-              scoring.scoreHand(aiPlayer, cutCard);
-              output("");
-            } else {
-              scoring.scoreHand(aiPlayer, cutCard);
-              output("");
-              scoring.scoreHand(humanPlayer, cutCard);
-              output("");
-            }
-          } catch (GameOverException goe) {
-            output(goe.getMessage());
-            doQuit = true;
+          // do this for ordering: non-crib counts first
+          CribbagePlayer[] players = aiCrib 
+            ? new CribbagePlayer[]{humanPlayer, aiPlayer}
+            : new CribbagePlayer[]{aiPlayer, humanPlayer};
+          for (CribbagePlayer player : players) {
+            int handPoints = Scoring.scoreHand(player.getDiscard(), cutCard);
+            System.out.println(player.getDiscard().debugString() + " | " + cutCard.toString());
+            System.out.println(player + "'s hand scores " + handPoints);
+            System.out.println();
+            player.addPoints(handPoints);
           }
           gameState = GameState.SCORE_CRIB;
           break;
         }
         case SCORE_CRIB: {
           // theoretically the crib is empty if it isn't your crib, but let's not take chances
-          try {
-            if (aiCrib) {
-              scoring.scoreCrib(aiPlayer, cutCard);
-            } else {
-              scoring.scoreCrib(humanPlayer, cutCard);
-            }
-            output("");
-          } catch (GameOverException goe) {
-            output(goe.getMessage());
-            doQuit = true;
-          }
+          CribbagePlayer player = aiCrib ? aiPlayer : humanPlayer;
+          int cribPoints = Scoring.scoreCrib(player.getCrib(), cutCard);
+          System.out.println(player.getCrib().debugString() + " | " + cutCard.toString());
+          System.out.println(player + "'s crib scores " + cribPoints);
+          System.out.println();
+          player.addPoints(cribPoints);
+          output("");
           gameState = GameState.DEAL;
           break;
         }

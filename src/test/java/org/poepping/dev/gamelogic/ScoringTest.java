@@ -10,8 +10,6 @@ import static org.junit.Assert.*;
 
 public class ScoringTest {
 
-  private static final Scoring SCORING = new Scoring();
-
   @Test
   public void testHowMany15s() {
     howMany15sHelper(0, "");
@@ -23,7 +21,7 @@ public class ScoringTest {
   }
 
   private void howMany15sHelper(int expected, String hand) {
-    assertFunctionForHand(expected, hand, SCORING::howMany15s);
+    assertFunctionForHand(expected, hand, Scoring::howMany15s);
   }
 
   @Test
@@ -39,7 +37,7 @@ public class ScoringTest {
   }
 
   private void howManyPairsHelper(int expected, String hand) {
-    assertFunctionForHand(expected, hand, SCORING::howManyPairs);
+    assertFunctionForHand(expected, hand, Scoring::howManyPairs);
   }
 
   @Test
@@ -56,7 +54,7 @@ public class ScoringTest {
   }
 
   private void pointsFromRunsHelper(int expected, String hand) {
-    assertFunctionForHand(expected, hand, SCORING::pointsFromRuns);
+    assertFunctionForHand(expected, hand, Scoring::pointsFromRuns);
   }
 
   @Test
@@ -74,7 +72,7 @@ public class ScoringTest {
   }
 
   private void pointsFromFlushesHelper(int expected, String hand, String cutCard, boolean isCrib) {
-    assertEquals((isCrib ? "crib: " : "hand") + hand + "|" + cutCard, expected, SCORING.pointsFromFlushes(
+    assertEquals((isCrib ? "crib: " : "hand") + hand + "|" + cutCard, expected, Scoring.pointsFromFlushes(
         handFromString(hand), Card.fromString(cutCard), isCrib
     ));
   }

@@ -51,7 +51,7 @@ public class HumanCribbagePlayer extends CribbagePlayer {
       String token = in.next();
       try {
         int indexChoice = Integer.parseInt(token);
-        return hand.choose(indexChoice);
+        return hand.get(indexChoice);
       } catch (NumberFormatException nfe) {
         System.out.println(token + " is not a number. Try again.");
       }
@@ -59,6 +59,7 @@ public class HumanCribbagePlayer extends CribbagePlayer {
   }
 
   public void waitToContinue() {
+    // TODO to implement
     // System.out.println("Enter to continue..\n");
     // in.nextLine();
     // do nothing

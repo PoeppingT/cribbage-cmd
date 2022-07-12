@@ -11,13 +11,13 @@ import java.util.Stack;
 public class EasyAiStrategy extends AiStrategy {
   @Override
   public Card chooseCardToDiscard(Hand hand) {
-    return hand.choose((int)(Math.random() * (double)hand.size()));
+    return hand.get((int)(Math.random() * (double)hand.size()));
   }
 
   @Override
   public Card chooseCardToPlay(Hand hand, Stack<Card> runningCards, int numberLeftTo31) {
     for (int i = 0; i < hand.size(); i++) {
-      Card chosenCard = hand.choose(i);
+      Card chosenCard = hand.get(i);
       if (chosenCard.getValue().getValue() <= numberLeftTo31) {
         return chosenCard;
       }
