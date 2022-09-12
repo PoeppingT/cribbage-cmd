@@ -17,6 +17,9 @@ package org.poepping.dev;
 import org.poepping.dev.cards.Card;
 import org.poepping.dev.cards.Deck;
 import org.poepping.dev.cards.Hand;
+import org.poepping.dev.gamelogic.Config;
+import org.poepping.dev.gamelogic.GameContext;
+import org.poepping.dev.gamelogic.GameState;
 import org.poepping.dev.gamelogic.Scoring;
 import org.poepping.dev.gamelogic.exceptions.GameOverException;
 import org.poepping.dev.player.AiCribbagePlayer;
@@ -42,23 +45,24 @@ public class CribbageGame implements Runnable {
   private CribbagePlayer humanPlayer;
   private boolean lastPlayerChecked = false;
 
-  enum GameState {
-    DEAL,
-    DISCARD_TO_CRIB,
-    FLIP_CUT_CARD,
-    PLAY_CARD,
-    SCORE_HANDS,
-    SCORE_CRIB
-  }
+  private GameContext context;
 
-  private CribbageGame(int scoreToWin, boolean aiCribFirst) {
-    scoring = new Scoring(scoreToWin);
+  private CribbageGame(Builder b) {
+    Config config = b.config;
+    scoring = new Scoring(config.maxScore);
+    
     runningCount = 0;
     runningCards = new Stack<>();
-    aiCrib = aiCribFirst;
+    
     aiPlayer = new AiCribbagePlayer("AI");
     humanPlayer = new HumanCribbagePlayer("HUMAN");
     gameState = GameState.DEAL;
+    context = GameContext.builder()
+      .config(config)
+      .players(aiPlayer, humanPlayer)
+      .state(gameState)
+      .build();
+    aiCrib = config.aiCribFirst;
   }
 
   @Override
@@ -232,26 +236,19 @@ public class CribbageGame implements Runnable {
   }
 
   static class Builder {
-    // ai level, score to win, display strategy, how many players,
-    int scoreToWin = Scoring.DEFAULT_POINTS_TO_WIN;
-    boolean aiCribFirst = true;
+    private Config config;
 
     private Builder() {
 
     }
 
-    public Builder scoreToWin(int scoreToWin) {
-      this.scoreToWin = scoreToWin;
-      return this;
-    }
-
-    public Builder aiCribFirst(boolean aiCribFirst) {
-      this.aiCribFirst = aiCribFirst;
+    public Builder config(Config config) {
+      this.config = config;
       return this;
     }
 
     public CribbageGame build() {
-      return new CribbageGame(scoreToWin, aiCribFirst);
+      return new CribbageGame(this);
     }
   }
 }

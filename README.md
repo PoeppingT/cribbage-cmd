@@ -5,13 +5,15 @@ Play cribbage on the command line using java
 maven
 
 ## How to Play
-java -cp /Users/poeppt/.m2/repository/org/slf4j/slf4j-api/1.7.30/slf4j-api-1.7.30.jar:/Users/poeppt/.m2/repository/org/apache/logging/log4j/log4j-slf4j-impl/2.13.3/log4j-slf4j-impl-2.13.3.jar:/Users/poeppt/.m2/repository/org/apache/logging/log4j/log4j-core/2.13.2/log4j-core-2.13.2.jar:/Users/poeppt/.m2/repository/org/apache/logging/log4j/log4j-api/2.13.2/log4j-api-2.13.2.jar:target/cribbage-cmd-1.0-SNAPSHOT.jar org.poepping.dev.Main
+java -cp /Users/poeppt/.m2/repository/org/slf4j/slf4j-api/1.7.30/slf4j-api-1.7.30.jar:/Users/poeppt/.m2/repository/org/apache/logging/log4j/log4j-slf4j-impl/2.13.3/log4j-slf4j-impl-2.13.3.jar:/Users/poeppt/.m2/repository/org/apache/logging/log4j/log4j-core/2.13.2/log4j-core-2.13.2.jar:/Users/poeppt/.m2/repository/org/apache/logging/log4j/log4j-api/2.13.2/log4j-api-2.13.2.jar:target/cribbage-cmd-1.0-SNAPSHOT.jar org.poepping.dev.MainMenu
 
 ## Todo
 fix up text user interface
 pass game context via context object
-add basic AI
+add "menu" (start game with config, stats)
+add basic AI (generational AI?)
 add tests
+add statistics
 add lombok?
 add proper logging
 add java launcher + releasing
@@ -37,6 +39,9 @@ Here's the question though: what do we do in the event of an AI player? there's 
 the engine still needs to actually run the game. should the UI be the one saying "I choose to discard these cards"? 
 like only the HumanPlayer interacts with the UI, right? so the GameEngine asks the player (human or not) for a choice. if it's a human player, pass the UI manager the information
 that's also the pattern of the Observer.. once the game state changes the UI should change to match the game state.
+
+HumanPlayer is the only thing that needs a UI. an interaction between two AIPlayers doesn't require any information to be output. So game is instantiated with a UI type and each human player has their own instance.. meh
+
 
 ### Game Engine Flow/Responsibilities
 1. 

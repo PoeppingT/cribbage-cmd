@@ -4,8 +4,6 @@ import org.poepping.dev.cards.Card;
 import org.poepping.dev.cards.Hand;
 import org.poepping.dev.gamelogic.exceptions.GameOverException;
 import org.poepping.dev.player.CribbagePlayer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -13,15 +11,7 @@ import java.util.*;
  * Utility holding scoring logic
  */
 public final class Scoring {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(Scoring.class);
-  public static final int DEFAULT_POINTS_TO_WIN = 121;
-
   private final int pointsToWin;
-
-  public Scoring() {
-    pointsToWin = DEFAULT_POINTS_TO_WIN;
-  }
 
   public Scoring(int pointsToWin) {
     this.pointsToWin = pointsToWin;

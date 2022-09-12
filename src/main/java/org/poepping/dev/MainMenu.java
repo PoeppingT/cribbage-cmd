@@ -14,14 +14,24 @@
 
 package org.poepping.dev;
 
-public class Main {
+import org.poepping.dev.gamelogic.Config;
+
+public class MainMenu {
   public static void main(String[] args) {
+
+    /*
+     * Welcome to Cribbage!
+     * 1. Start Game
+     * 2. View Stats
+     * 3. Exit
+     */
+
     CribbageGame.Builder cgb = CribbageGame.builder();
     if (args.length > 0) {
       // assume they've passed the score
       try {
         int scoreToWin = Integer.parseInt(args[0]);
-        cgb.scoreToWin(scoreToWin);
+        cgb.config(Config.builder().maxScore(scoreToWin).build());
         System.out.println("At least one argument passed,"
             + " starting a Cribbage Game where the score to win is " + scoreToWin + "...");
       } catch (NumberFormatException nfe) {
@@ -30,6 +40,7 @@ public class Main {
       }
     } else {
       System.out.println("No arguments passed, starting a standard Cribbage Game...");
+      cgb.config(Config.builder().build());
     }
     System.out.println();
     cgb.build().run();
