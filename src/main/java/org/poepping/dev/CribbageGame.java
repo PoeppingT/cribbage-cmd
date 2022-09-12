@@ -139,6 +139,7 @@ public class CribbageGame implements Runnable {
             runningCount += cardPlayed.get().getValue().getValue();
             if (runningCount >= 31) {
               runningCount = 0;
+              runningCards.clear(); // we start over from scratch after hitting 31.
             }
             lastPlayerChecked = false;
           } else {

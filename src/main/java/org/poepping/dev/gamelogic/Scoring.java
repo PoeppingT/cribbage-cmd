@@ -4,6 +4,8 @@ import org.poepping.dev.cards.Card;
 import org.poepping.dev.cards.Hand;
 import org.poepping.dev.gamelogic.exceptions.GameOverException;
 import org.poepping.dev.player.CribbagePlayer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -11,6 +13,8 @@ import java.util.*;
  * Utility holding scoring logic
  */
 public final class Scoring {
+  private static final Logger LOGGER = LoggerFactory.getLogger(Scoring.class);
+
   private final int pointsToWin;
 
   public Scoring(int pointsToWin) {
@@ -40,7 +44,7 @@ public final class Scoring {
 
     public static class Builder {
       private int score = 0;
-      private String message = "No reason /shrug";
+      private String message = "";
 
       public Builder() {
 
@@ -51,13 +55,28 @@ public final class Scoring {
         return this;
       }
 
+      public Builder addScore(int score) {
+        this.score += score;
+        return this;
+      }
+
       public Builder message(String message) {
         this.message = message;
         return this;
       }
 
+      public Builder addMessage(String message) {
+        this.message = new StringBuilder(this.message).append(System.lineSeparator()).append(message).toString();
+        return this;
+      }
+
       public ScoreEvent build() {
         return new ScoreEvent(this);
+      }
+
+      @Override
+      public String toString() {
+        return "ScoreEvent: " + score + " for: \n" + message;
       }
     }
   }
@@ -196,8 +215,10 @@ public final class Scoring {
       Card cardPlayed) throws GameOverException {
     // TODO there's a bug here, I need to create one "ScoringEvent" for this pegging play and sum total while I work
     // TODO finally finishing by returning one ScoringEvent or null
-
+    ScoreEvent.Builder pegEvent = ScoreEvent.builder();
+    LOGGER.trace("checking {}->{} for pegging", cardPlayed, cardsPlayed);
     final int cardsInRunningCards = cardsPlayed.size();
+    LOGGER.trace("found {} cards played so far", cardsInRunningCards);
     // PAIRS in cribbage:
     // 1 pair is 2 points
     // 2 pairs is 6 points
@@ -208,11 +229,15 @@ public final class Scoring {
     int numPairs = 0;
     boolean pairing = true;
     Stack<Card> inUseStack = new Stack<>();
+    LOGGER.trace("checking {}->{} for pairs", cardPlayed, cardsPlayed);
     while (pairing) {
       try {
         Card prevCard = cardsPlayed.pop();
         inUseStack.push(prevCard);
+        LOGGER.trace("checking {} against {} for pairs, cardsPlayed {} inUseStack {}", 
+            prevCard, cardPlayed, cardsPlayed, inUseStack);
         if (cardPlayed.getValue().equals(prevCard.getValue())) {
+          LOGGER.trace("pair found!");
           numPairs++;
         } else {
           pairing = false;
@@ -233,13 +258,16 @@ public final class Scoring {
       } else {
         assert (false);
       }
-      return ScoreEvent.builder()
-          .score(pointsToPlayer)
-          .message(numPairs + (numPairs > 1 ? " pairs " : " pair ") + "for " + pointsToPlayer + "!")
-          .build();
+      pegEvent
+          .addScore(pointsToPlayer)
+          .addMessage(numPairs + (numPairs > 1 ? " pairs " : " pair ") + "for " + pointsToPlayer + "!");
+      LOGGER.debug("found pairs, pegEvent: {}", pegEvent);
+    } else {
+      LOGGER.debug("no pairs");
     }
 
     // put the cards back
+    LOGGER.trace("putting all of inUseStack {} back onto cardsPlayed {}", inUseStack, cardsPlayed);
     while (!inUseStack.empty()) {
       cardsPlayed.push(inUseStack.pop());
     }
@@ -253,41 +281,45 @@ public final class Scoring {
     // are the last 3 a runo3? are the last 4 a runo4? are the last 5 a runo5?
     // take the last k, sort them. if the distance between each (sorted) is exactly 1, it's a run
     ArrayList<Card> sortedLastK = new ArrayList<>();
+    sortedLastK.add(cardPlayed);
+    LOGGER.trace("on peg: checking {}->{} for runs", cardPlayed, cardsPlayed);
     boolean checkingRuns = true;
     int highestRun = 0;
-    for (int i = 1; i <= 5 && checkingRuns; i++) {
+    for (int i = 2; i <= 5 && checkingRuns; i++) {
       try {
         Card oneCard = cardsPlayed.pop();
         sortedLastK.add(oneCard);
         inUseStack.push(oneCard);
       } catch (EmptyStackException ese) {
-        // this means there are no more running cards. check the ones we have if applicable
-        checkingRuns = false;
+        // this means there are no more running cards. we checked the one we pulled last time already, so quit.
+        break;
       }
       sortedLastK.sort(Card::compareTo);
       Card lastCard = null;
       boolean foundRun = true;
+      LOGGER.trace("working backwards looking for runs in {}", sortedLastK);
       for (Card card : sortedLastK) {
-        if (lastCard == null) {
-          lastCard = card;
-        } else {
-          if (lastCard.distanceTo(card) != 1) {
-            // if it isn't directly sequential, it's no good. continue.
-            foundRun = false;
-            break;
-          }
+        LOGGER.trace("lastCard: {}, card: {}", lastCard, card);
+        if (lastCard != null && lastCard.distanceTo(card) != 1) {
+          // if we're walking a run and if it isn't directly sequential, it's no good. continue.
+          LOGGER.trace("not 1 away, so no run");
+          foundRun = false;
+          break;
         }
+        lastCard = card;
       }
       if (foundRun) {
         highestRun = i;
+        LOGGER.trace("found a run of size {} in {}", highestRun, sortedLastK);
+      } else {
+        LOGGER.trace("found no runs in {}", sortedLastK);
       }
     }
     // we've looked at the last 5 cards and found the highest run we could
     if (highestRun > 2) {
-      return ScoreEvent.builder()
-          .score(highestRun)
-          .message("run of " + highestRun + " for " + highestRun + "!")
-          .build();
+      pegEvent
+          .addScore(highestRun)
+          .addMessage("run of " + highestRun + " for " + highestRun + "!");
     }
 
     // put the cards back
@@ -298,18 +330,20 @@ public final class Scoring {
     assert cardsPlayed.size() == cardsInRunningCards;
 
     if (cardPlayed.getValue().getValue() + runningCount == 15) {
-      return ScoreEvent.builder()
-          .score(2)
-          .message("15 for 2!")
+      pegEvent
+          .addScore(2)
+          .addMessage("15 for 2!")
           .build();
     }
     if (cardPlayed.getValue().getValue() + runningCount == 31) {
-      return ScoreEvent.builder()
-          .score(2)
-          .message("31 for 2!")
-          .build();
+      pegEvent
+          .addScore(2)
+          .addMessage("31 for 2!");
     }
-    // no points
+    // if we found anything, return it. otherwise no score update.
+    if (pegEvent.score > 0) {
+      return pegEvent.build();
+    }
     return null;
   }
 
