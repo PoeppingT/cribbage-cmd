@@ -201,7 +201,7 @@ public final class Scoring {
       }
     }
     // all cards in the hand match flushSuit
-    if (cutCard.getSuit().equals(flushSuit)) {
+    if (cutCard != null && cutCard.getSuit().equals(flushSuit)) {
       return 5;
     } else if (!isCrib) {
       return 4;
