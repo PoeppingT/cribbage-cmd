@@ -12,7 +12,7 @@ public class HardAiStrategy extends AiStrategy {
   }
 
   @Override
-  public Card chooseCardToPlay(Hand hand, Stack<Card> runningCards, int numberLeftTo31) {
+  public Card chooseCardToPlay(Hand hand, Stack<Card> runningCards, int runningCount) {
     return null;
   }
 }

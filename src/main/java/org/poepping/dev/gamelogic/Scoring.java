@@ -105,7 +105,8 @@ public final class Scoring {
     score += pointsFromFlushes(hand, cutCard, isCrib);
     // nubs. this implementation assumes there is only one jack of a given suit.
     for (Card card : hand) {
-      if (card.getValue().equals(Card.Value.JACK)
+      if (cutCard != null
+          && card.getValue().equals(Card.Value.JACK)
           && card.getSuit().equals(cutCard.getSuit())) {
         // nubs!
         score += 1;
@@ -209,10 +210,7 @@ public final class Scoring {
     }
   }
   
-  public static ScoreEvent peggingPlay(
-      int runningCount,
-      Stack<Card> cardsPlayed,
-      Card cardPlayed) throws GameOverException {
+  public static ScoreEvent peggingPlay(int runningCount, Stack<Card> cardsPlayed, Card cardPlayed) {
     // TODO there's a bug here, I need to create one "ScoringEvent" for this pegging play and sum total while I work
     // TODO finally finishing by returning one ScoringEvent or null
     ScoreEvent.Builder pegEvent = ScoreEvent.builder();

@@ -68,6 +68,10 @@ public class Hand implements Iterable<Card> {
     return cards.isEmpty();
   }
 
+  public Card getRandom() {
+    return cards.get((int) (Math.random() * (double) size()));
+  }
+
   public Card get(int choice) {
     return cards.get(choice);
   }
@@ -84,7 +88,19 @@ public class Hand implements Iterable<Card> {
     return cards.iterator();
   }
 
+  @Override
   public String toString() {
+    StringBuilder cardDisplays = new StringBuilder();
+    for (int i = 0; i < cards.size(); i++) {
+      cardDisplays.append(cards.get(i));
+      if (i != cards.size() - 1) {
+        cardDisplays.append(" | ");
+      }
+    }
+    return cardDisplays.toString();
+  }
+
+  public String prettyToString() {
     StringBuilder indices = new StringBuilder();
     StringBuilder cardDisplays = new StringBuilder();
     for (int i = 0; i < cards.size(); i++) {

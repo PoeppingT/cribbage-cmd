@@ -51,11 +51,12 @@ public abstract class CribbagePlayer {
    * should be null to indicate that no card can be played
    * @return
    */
-  abstract Card chooseCardToPlay(Stack<Card> runningCards, int numberLeftTo31);
+  abstract Card chooseCardToPlay(Stack<Card> runningCards, int runningCount);
 
   public abstract void waitToContinue();
 
-  public boolean canPlay(int numberLeftTo31) {
+  public boolean canPlay(int runningCount) {
+    int numberLeftTo31 = 31 - runningCount;
     for (Card card : hand) {
       if (card.getValue().getValue() <= numberLeftTo31) {
         return true;
@@ -64,8 +65,8 @@ public abstract class CribbagePlayer {
     return false;
   }
 
-  public Optional<Card> playCard(Stack<Card> runningCards, int numberLeftTo31) {
-    Card chosenCard = chooseCardToPlay(runningCards, numberLeftTo31);
+  public Optional<Card> playCard(Stack<Card> runningCards, int runningCount) {
+    Card chosenCard = chooseCardToPlay(runningCards, runningCount);
     if (chosenCard != null) {
       hand.remove(chosenCard);
       discard.add(chosenCard);

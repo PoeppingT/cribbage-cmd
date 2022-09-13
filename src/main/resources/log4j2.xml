@@ -20,7 +20,7 @@
   </Appenders>
   
   <Loggers>
-    <Logger name="org.poepping.dev" level="trace" additivity="false">
+    <Logger name="org.poepping.dev" level="debug" additivity="false">
       <AppenderRef ref="STDOUT"/>
     </Logger>
 

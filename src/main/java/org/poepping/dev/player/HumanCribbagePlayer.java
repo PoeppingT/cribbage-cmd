@@ -19,7 +19,7 @@ public class HumanCribbagePlayer extends CribbagePlayer {
     Card[] discardedCards = new Card[numberToDiscard];
     Hand tempHand = Hand.copyOf(hand);
     for (int i = 0; i < numberToDiscard; i++) {
-      System.out.println(tempHand);
+      System.out.println(tempHand.prettyToString());
       System.out.println("Choose " + (numberToDiscard - i) + " card(s) to discard to the crib.");
       discardedCards[i] = chooseCardFromHand(tempHand);
       tempHand.remove(discardedCards[i]);
@@ -28,18 +28,18 @@ public class HumanCribbagePlayer extends CribbagePlayer {
   }
 
   @Override
-  public Card chooseCardToPlay(Stack<Card> runningCards, int numberLeftTo31) {
-    if (!canPlay(numberLeftTo31)) {
+  public Card chooseCardToPlay(Stack<Card> runningCards, int runningCount) {
+    if (!canPlay(runningCount)) {
       System.out.println(this + " cannot play!");
       return null;
     }
     System.out.println("Last Played: " + runningCards);
-    System.out.println(hand);
+    System.out.println(hand.prettyToString());
     System.out.println("Choose a card to play.");
     while (true) {
       Card choice = chooseCardFromHand(hand);
-      if (choice.getValue().getValue() > numberLeftTo31) {
-        System.out.println("You must choose a " + numberLeftTo31 + " or less.");
+      if (choice.getValue().getValue() + runningCount > 31) {
+        System.out.println("You must choose a " + (31 - runningCount) + " or less.");
       } else {
         return choice;
       }

@@ -7,7 +7,7 @@ import java.util.Stack;
 
 public abstract class AiStrategy {
 
-  public static final Level DEFAULT_LEVEL = Level.EASY;
+  public static final Level DEFAULT_LEVEL = Level.NORMAL;
 
   /*
  what does it mean to represent difficulty? strategy. given a situation, how do I choose what to play?

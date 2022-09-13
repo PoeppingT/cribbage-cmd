@@ -121,19 +121,13 @@ public class CribbageGame implements Runnable {
           printGameState();
           CribbagePlayer player = aiTurn ? aiPlayer : humanPlayer;
           // assuming here that playCard returns a legal card to play. responsibility is on the player
-          Optional<Card> cardPlayed = player.playCard(runningCards, 31 - runningCount);
+          Optional<Card> cardPlayed = player.playCard(runningCards, runningCount);
           if (cardPlayed.isPresent()) {
             output(player.getName() + " played " + cardPlayed.get());
-            try {
-              Scoring.ScoreEvent peggingPoints = Scoring.peggingPlay(runningCount, runningCards, cardPlayed.get());
-              if (peggingPoints != null) {
-                System.out.println(peggingPoints.message());
-                player.addPoints(peggingPoints.score());
-              }
-            } catch (GameOverException goe) {
-              output(goe.getMessage());
-              doQuit = true;
-              break;
+            Scoring.ScoreEvent peggingPoints = Scoring.peggingPlay(runningCount, runningCards, cardPlayed.get());
+            if (peggingPoints != null) {
+              System.out.println(peggingPoints.message());
+              player.addPoints(peggingPoints.score());
             }
             runningCards.add(cardPlayed.get());
             runningCount += cardPlayed.get().getValue().getValue();

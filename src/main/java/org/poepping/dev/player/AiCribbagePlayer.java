@@ -28,8 +28,8 @@ public class AiCribbagePlayer extends CribbagePlayer {
   }
 
   @Override
-  public Card chooseCardToPlay(Stack<Card> runningCards, int numberLeftTo31) {
-    return aiLevel.strategy().chooseCardToPlay(hand, runningCards, numberLeftTo31);
+  public Card chooseCardToPlay(Stack<Card> runningCards, int runningCount) {
+    return aiLevel.strategy().chooseCardToPlay(hand, runningCards, runningCount);
   }
 
   @Override
