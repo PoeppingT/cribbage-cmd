@@ -18,9 +18,9 @@ import org.poepping.dev.cards.Card;
 import org.poepping.dev.cards.Deck;
 import org.poepping.dev.cards.Hand;
 import org.poepping.dev.gamelogic.Config;
-import org.poepping.dev.gamelogic.GameContext;
-import org.poepping.dev.gamelogic.GameState;
 import org.poepping.dev.gamelogic.Scoring;
+import org.poepping.dev.gamelogic.context.GameContext;
+import org.poepping.dev.gamelogic.context.GameState;
 import org.poepping.dev.gamelogic.exceptions.GameOverException;
 import org.poepping.dev.player.AiCribbagePlayer;
 import org.poepping.dev.player.CribbagePlayer;
@@ -127,7 +127,7 @@ public class CribbageGame implements Runnable {
             Scoring.ScoreEvent peggingPoints = Scoring.peggingPlay(runningCount, runningCards, cardPlayed.get());
             if (peggingPoints != null) {
               System.out.println(peggingPoints.message());
-              player.addPoints(peggingPoints.score());
+              givePointsAndMaybeEndGame(player, peggingPoints.score());
             }
             runningCards.add(cardPlayed.get());
             runningCount += cardPlayed.get().getValue().getValue();
@@ -171,7 +171,7 @@ public class CribbageGame implements Runnable {
             System.out.println(player.getDiscard().debugString() + " | " + cutCard.toString());
             System.out.println(player + "'s hand scores " + handPoints);
             System.out.println();
-            player.addPoints(handPoints);
+            givePointsAndMaybeEndGame(player, handPoints);
           }
           gameState = GameState.SCORE_CRIB;
           break;
@@ -183,7 +183,7 @@ public class CribbageGame implements Runnable {
           System.out.println(player.getCrib().debugString() + " | " + cutCard.toString());
           System.out.println(player + "'s crib scores " + cribPoints);
           System.out.println();
-          player.addPoints(cribPoints);
+          givePointsAndMaybeEndGame(player, cribPoints);
           output("");
           gameState = GameState.DEAL;
           break;

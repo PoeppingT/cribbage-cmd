@@ -1,10 +1,13 @@
-package org.poepping.dev.gamelogic;
+package org.poepping.dev.gamelogic.context;
 
 import org.poepping.dev.cards.Card;
+import org.poepping.dev.gamelogic.Config;
 import org.poepping.dev.player.AiCribbagePlayer;
 import org.poepping.dev.player.CribbagePlayer;
 import org.poepping.dev.player.HumanCribbagePlayer;
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -24,9 +27,23 @@ public class GameContext {
   public Stack<Card> cardsPlayed;
   public int runningCount;
 
+  final List<GameContextObserver> observers;
+
   private GameContext(Builder b) {
     this.state = GameState.DEAL;
     this.config = b.config;
+
+    observers = new ArrayList<GameContextObserver>();
+  }
+
+  public void addObserver(GameContextObserver observer) {
+    observers.add(observer);
+  }
+
+  public void updateObservers() {
+    for (GameContextObserver observer : observers) {
+      observer.update(this);
+    }
   }
 
   public static Builder builder() {

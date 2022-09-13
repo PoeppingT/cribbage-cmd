@@ -1,4 +1,4 @@
-package org.poepping.dev.gamelogic;
+package org.poepping.dev.gamelogic.context;
 
 public enum GameState {
     DEAL,
