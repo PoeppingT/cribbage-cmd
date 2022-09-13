@@ -42,6 +42,7 @@ that's also the pattern of the Observer.. once the game state changes the UI sho
 
 HumanPlayer is the only thing that needs a UI. an interaction between two AIPlayers doesn't require any information to be output. So game is instantiated with a UI type and each human player has their own instance.. meh
 
+Run on a given context for testing purposes. Can create a test player to run through tests of the engine itself, but CribbageGame is a Runnable.
 
 ### Game Engine Flow/Responsibilities
 1. 
