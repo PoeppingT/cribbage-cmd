@@ -146,8 +146,9 @@ public class CribbageGame implements Runnable {
               lastPlayerChecked = false;
               runningCount = 0;
               runningCards.clear();
+            } else {
+              lastPlayerChecked = true;
             }
-            lastPlayerChecked = true;
           }
           aiTurn = !aiTurn;
           if (aiPlayer.outOfCards() && humanPlayer.outOfCards()) {
