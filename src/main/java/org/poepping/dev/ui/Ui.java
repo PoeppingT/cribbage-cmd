@@ -1,10 +1,10 @@
 package org.poepping.dev.ui;
 
-/**
- * Encapsulates everything that might be required for the UI to show.
- * 
- * UI should be stateless.. read from a shared context object and update when things change.
- */
+import org.poepping.dev.cards.Card;
+import org.poepping.dev.gamelogic.context.GameContext;
+
 public interface Ui {
-    
+    void display(GameContext context);
+    Card chooseCardToPlay(GameContext context);
+    Card[] chooseCardsToDiscard(GameContext context);
 }
