@@ -3,8 +3,6 @@ package org.poepping.dev.gamelogic;
 import org.poepping.dev.cards.Card;
 import org.poepping.dev.cards.Hand;
 import org.poepping.dev.event.ScoreEvent;
-import org.poepping.dev.gamelogic.exceptions.GameOverException;
-import org.poepping.dev.gamelogic.player.CribbagePlayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,12 +13,6 @@ import java.util.*;
  */
 public final class Scoring {
   private static final Logger LOGGER = LoggerFactory.getLogger(Scoring.class);
-
-  private final int pointsToWin;
-
-  public Scoring(int pointsToWin) {
-    this.pointsToWin = pointsToWin;
-  }
 
   public static int scoreHand(Hand hand, Card cutCard) {
     return scoreCards(hand, cutCard, false);
@@ -279,17 +271,6 @@ public final class Scoring {
           .addScore(2)
           .addReason("31 for 2!");
     }
-    // if we found anything, return it. otherwise no score update.
-    if (pegEvent.score() > 0) {
-      return pegEvent.build();
-    }
-    return null;
-  }
-
-  public void givePoints(CribbagePlayer player, int points) throws GameOverException {
-    player.addPoints(points);
-    if (player.getScore() >= pointsToWin) {
-      throw new GameOverException(player + " wins!");
-    }
+    return pegEvent.build();
   }
 }

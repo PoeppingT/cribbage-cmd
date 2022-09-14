@@ -22,30 +22,26 @@ import org.poepping.dev.gamelogic.Config;
 import org.poepping.dev.gamelogic.Scoring;
 import org.poepping.dev.gamelogic.context.GameContext;
 import org.poepping.dev.gamelogic.context.GameState;
-import org.poepping.dev.gamelogic.exceptions.GameOverException;
 import org.poepping.dev.gamelogic.player.AiCribbagePlayer;
 import org.poepping.dev.gamelogic.player.CribbagePlayer;
 import org.poepping.dev.gamelogic.player.HumanCribbagePlayer;
 import org.poepping.dev.ui.CribbageUi;
 import org.poepping.dev.ui.UiFactory;
 import org.poepping.dev.ui.UiType;
-import org.poepping.dev.util.CircularIterator;
 
 import java.util.*;
 import java.util.function.Consumer;
 
 public class CribbageGame implements Runnable {
-  private boolean doQuit = false;
   // cribbage is always played with a standard deck
   private final Deck deck = Deck.standard();
-  private final Scoring scoring;
   private boolean lastPlayerChecked = false;
 
   private GameContext context;
+  private Config config;
 
   private CribbageGame(Builder b) {
-    Config config = b.config;
-    scoring = new Scoring(config.maxScore);
+    config = b.config;
     context = GameContext.builder()
         .config(config)
         .runningCount(0)
@@ -67,11 +63,10 @@ public class CribbageGame implements Runnable {
   @Override
   public void run() {
     // infinite loop of gametime? game loop.
-    while (!doQuit) {
+    while (context.state != GameState.FINISHED) {
       // we check whether the game is over every time we award points
       switch (context.state) {
-        case NOT_STARTED:
-        case FINISHED: {
+        case NOT_STARTED: {
           context.state = GameState.DEAL;
           break;
         }
@@ -128,10 +123,8 @@ public class CribbageGame implements Runnable {
           if (cardPlayed.isPresent()) {
             callUi(ui -> ui.handle(CardPlayEvent.builder().player(player).card(cardPlayed.get()).build()));
             ScoreEvent peggingPoints = Scoring.peggingPlay(context.runningCount, context.cardsPlayed, cardPlayed.get());
-            if (peggingPoints != null) {
-              // TODO we should change this?
-              callUi(ui -> ui.handle(ScoreEvent.builder()
-                  .score(peggingPoints.score()).reason(peggingPoints.reason()).player(player).build()));
+            if (peggingPoints.score() > 0) {
+              callUi(ui -> ui.handle(ScoreEvent.builder(peggingPoints).player(player).build()));
               givePointsAndMaybeEndGame(player, peggingPoints.score());
             }
             context.cardsPlayed.add(cardPlayed.get());
@@ -214,11 +207,10 @@ public class CribbageGame implements Runnable {
   }
 
   private void givePointsAndMaybeEndGame(CribbagePlayer player, int points) {
-    try {
-      scoring.givePoints(player, points);
-    } catch (GameOverException goe) {
+    player.addPoints(points);
+    if (player.getScore() > config.maxScore) {
       callUi(ui -> ui.handle(GameOverEvent.builder().winner(player).build()));
-      doQuit = true;
+      context.state = GameState.FINISHED;
     }
   }
 

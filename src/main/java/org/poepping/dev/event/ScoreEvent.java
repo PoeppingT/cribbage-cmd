@@ -34,6 +34,13 @@ public class ScoreEvent extends Event {
     return new Builder();
   }
 
+  public static Builder builder(ScoreEvent other) {
+    return new Builder()
+      .score(other.score)
+      .reason(other.reason)
+      .player(other.player);
+  }
+
   @Override
   public Type getType() {
     return Type.SCORE;
