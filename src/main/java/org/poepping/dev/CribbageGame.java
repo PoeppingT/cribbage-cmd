@@ -23,12 +23,13 @@ import org.poepping.dev.gamelogic.Scoring;
 import org.poepping.dev.gamelogic.context.GameContext;
 import org.poepping.dev.gamelogic.context.GameState;
 import org.poepping.dev.gamelogic.exceptions.GameOverException;
-import org.poepping.dev.player.AiCribbagePlayer;
-import org.poepping.dev.player.CribbagePlayer;
-import org.poepping.dev.player.HumanCribbagePlayer;
+import org.poepping.dev.gamelogic.player.AiCribbagePlayer;
+import org.poepping.dev.gamelogic.player.CribbagePlayer;
+import org.poepping.dev.gamelogic.player.HumanCribbagePlayer;
 import org.poepping.dev.ui.CribbageUi;
 import org.poepping.dev.ui.UiFactory;
 import org.poepping.dev.ui.UiType;
+import org.poepping.dev.util.CircularIterator;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -38,36 +39,27 @@ public class CribbageGame implements Runnable {
   // cribbage is always played with a standard deck
   private final Deck deck = Deck.standard();
   private final Scoring scoring;
-
-  // private GameState gameState;
-  // private Card cutCard;
-  // private int runningCount;
-  // private Stack<Card> runningCards;
-  // private boolean aiTurn;
-  // private boolean aiCrib;
-  // // for now, we assume one AI player and one human player. can be extended for 3-handed or 4-handed
-  // private CribbagePlayer aiPlayer;
-  // private CribbagePlayer humanPlayer;
   private boolean lastPlayerChecked = false;
 
   private GameContext context;
 
   private CribbageGame(Builder b) {
     Config config = b.config;
+    scoring = new Scoring(config.maxScore);
     context = GameContext.builder()
         .config(config)
         .runningCount(0)
         .cardsPlayed(new Stack<>())
         .build();
-    CribbageUi ui = UiFactory.create(config.uiType, context);
-    CribbageUi aiUi = UiFactory.create(UiType.NO_OP, context);
-    scoring = new Scoring(config.maxScore);
+    UiFactory uiFactory = new UiFactory(context);
+    CribbageUi ui = uiFactory.create(config.uiType);
+    CribbageUi aiUi = uiFactory.create(UiType.NO_OP);
 
     CribbagePlayer ai = new AiCribbagePlayer(aiUi, "AI");
     CribbagePlayer human = new HumanCribbagePlayer(ui, "HUMAN");
     
-    context.addPlayer(ai);
-    context.addPlayer(human);
+    context.table.addPlayer(ai);
+    context.table.addPlayer(human);
     context.whoseCrib = config.aiCribFirst ? ai : human;
     context.whoseTurn = config.aiCribFirst ? human : ai;
   }
@@ -86,12 +78,10 @@ public class CribbageGame implements Runnable {
         case DEAL: {
           // reset player hands, shuffle the deck, deal out 6 cards to each player
           // move the crib to the left
-          context.whoseCrib = context.players.get((context.players.indexOf(context.whoseCrib) + 1)
-              % context.players.size());
+          context.whoseCrib = context.table.leftOf(context.whoseCrib);
           // next turn is to the left of the crib
-          context.whoseTurn = context.players.get((context.players.indexOf(context.whoseCrib) + 1)
-              % context.players.size());
-          for (CribbagePlayer player : context.players) {
+          context.whoseTurn = context.table.leftOf(context.whoseCrib);
+          for (CribbagePlayer player : context.table) {
             player.reset();
           }
           context.cardsPlayed.clear();
@@ -99,11 +89,9 @@ public class CribbageGame implements Runnable {
           context.cutCard = null;
           deck.shuffle();
           for (int i = 0; i < 6; i++) {
-            int cribIndex = context.players.indexOf(context.whoseCrib);
-            // start from one because crib player gets dealt to last
-            // TODO could we use whoseTurn for this?
-            for (int j = 1; j <= context.players.size(); j++) {
-              context.players.get((cribIndex + j) % context.players.size()).dealCard(deck.draw());
+            // dealer gets crib and deals to the left first
+            for (CribbagePlayer player : context.table.from(context.table.leftOf(context.whoseCrib))) {
+              player.dealCard(deck.draw());
             }
           }
           context.state = GameState.DISCARD_TO_CRIB;
@@ -112,7 +100,7 @@ public class CribbageGame implements Runnable {
         case DISCARD_TO_CRIB: {
           callUi(CribbageUi::displayGame);
           Hand crib = context.whoseCrib.getCrib();
-          for (CribbagePlayer player : context.players) {
+          for (CribbagePlayer player : context.table) {
             player.discardToCrib(crib);
           }
           context.state = GameState.FLIP_CUT_CARD;
@@ -167,10 +155,9 @@ public class CribbageGame implements Runnable {
               lastPlayerChecked = true;
             }
           }
-          context.whoseTurn = context.players.get((context.players.indexOf(context.whoseTurn) + 1)
-              % context.players.size());
+          context.whoseTurn = context.table.leftOf(context.whoseTurn);
           boolean everyoneOutOfCards = true;
-          for (CribbagePlayer p : context.players) {
+          for (CribbagePlayer p : context.table) {
             everyoneOutOfCards = everyoneOutOfCards && p.outOfCards();
           }
           if (everyoneOutOfCards) {
@@ -185,10 +172,10 @@ public class CribbageGame implements Runnable {
           break;
         }
         case SCORE_HANDS: {
-          int cribPlayerIndex = context.players.indexOf(context.whoseCrib);
-          // start from one becase non-crib counts first
-          for (int i = 1; i <= context.players.size(); i++) {
-            CribbagePlayer player = context.players.get((cribPlayerIndex + i) % context.players.size());
+          int firstScorerIndex = context.table.players.indexOf(context.table.leftOf(context.whoseCrib));
+
+          for (int i = 0; i < context.table.players.size(); i++) {
+            CribbagePlayer player = context.table.players.get((firstScorerIndex + i) % context.table.players.size());
             int handPoints = Scoring.scoreHand(player.getDiscard(), context.cutCard);
             // TODO maybe the extension logic isn't great for builders? score/player functions in ScoreEvent
             //      return ScoreEvent.Builder objects (as it should) but we need a HandScoreEvent.Builder object
@@ -199,7 +186,7 @@ public class CribbageGame implements Runnable {
             callUi(ui -> ui.handle(HandScoreEvent.builder()
                 .hand(player.getDiscard())
                 .score(handPoints)
-                .reason("Hand") // could be improved
+                .reason("hand") // could be improved
                 .player(player).build()));
             givePointsAndMaybeEndGame(player, handPoints);
           }
@@ -213,7 +200,7 @@ public class CribbageGame implements Runnable {
           callUi(ui -> ui.handle(HandScoreEvent.builder()
               .hand(player.getCrib())
               .score(cribPoints)
-              .reason("Crib") // could be improved
+              .reason("crib") // could be improved
               .player(player).build()));
           givePointsAndMaybeEndGame(player, cribPoints);
           context.state = GameState.DEAL;
@@ -236,7 +223,7 @@ public class CribbageGame implements Runnable {
   }
 
   private void callUi(Consumer<CribbageUi> uiFunction) {
-    for (CribbagePlayer player : context.players) {
+    for (CribbagePlayer player : context.table) {
       uiFunction.accept(player.getUi());
     }
   }

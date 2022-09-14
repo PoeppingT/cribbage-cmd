@@ -1,6 +1,6 @@
 package org.poepping.dev.gamelogic;
 
-import org.poepping.dev.gamelogic.strategy.AiStrategy;
+import org.poepping.dev.gamelogic.player.strategy.AiStrategy;
 import org.poepping.dev.ui.UiType;
 
 public class Config {

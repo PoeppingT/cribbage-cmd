@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package org.poepping.dev.player;
+package org.poepping.dev.gamelogic.player;
 
 import org.poepping.dev.cards.Card;
 import org.poepping.dev.cards.Hand;

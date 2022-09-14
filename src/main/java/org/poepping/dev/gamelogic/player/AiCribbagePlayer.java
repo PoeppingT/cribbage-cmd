@@ -1,8 +1,8 @@
-package org.poepping.dev.player;
+package org.poepping.dev.gamelogic.player;
 
 import org.poepping.dev.cards.Card;
 import org.poepping.dev.cards.Hand;
-import org.poepping.dev.gamelogic.strategy.AiStrategy;
+import org.poepping.dev.gamelogic.player.strategy.AiStrategy;
 import org.poepping.dev.ui.CribbageUi;
 
 public class AiCribbagePlayer extends CribbagePlayer {

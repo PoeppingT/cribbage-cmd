@@ -1,7 +1,7 @@
 package org.poepping.dev.event;
 
 import org.poepping.dev.cards.Card;
-import org.poepping.dev.player.CribbagePlayer;
+import org.poepping.dev.gamelogic.player.CribbagePlayer;
 
 public class CardPlayEvent extends Event {
   private final CribbagePlayer player; // who played the card

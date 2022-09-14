@@ -1,4 +1,4 @@
-package org.poepping.dev.gamelogic.strategy;
+package org.poepping.dev.gamelogic.player.strategy;
 
 import org.poepping.dev.cards.Card;
 import org.poepping.dev.cards.Hand;

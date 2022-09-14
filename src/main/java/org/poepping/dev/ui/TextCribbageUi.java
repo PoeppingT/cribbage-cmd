@@ -11,8 +11,8 @@ import org.poepping.dev.event.HandScoreEvent;
 import org.poepping.dev.event.ScoreEvent;
 import org.poepping.dev.gamelogic.context.GameContext;
 import org.poepping.dev.gamelogic.context.GameState;
-import org.poepping.dev.player.CribbagePlayer;
-import org.poepping.dev.player.HumanCribbagePlayer;
+import org.poepping.dev.gamelogic.player.CribbagePlayer;
+import org.poepping.dev.gamelogic.player.HumanCribbagePlayer;
 
 import java.util.Scanner;
 
@@ -27,7 +27,7 @@ public final class TextCribbageUi extends CribbageUi {
   @Override
   public void displayGame() {
     System.out.println("================================");
-    for (CribbagePlayer player : context.players) {
+    for (CribbagePlayer player : context.table) {
       System.out.print(player.scoreboard(context.whoseCrib.equals(player)) + "\t\t");
     }
     System.out.println("\n================================");
@@ -65,8 +65,9 @@ public final class TextCribbageUi extends CribbageUi {
       }
       case HAND_SCORE: {
         HandScoreEvent hse = (HandScoreEvent) event;
-        output(hse.player().getName() + "'s hand: " + hse.getHand().debugString() + " scores " + hse.score()
-            + " " + hse.player().getScore() + "->" + (hse.player().getScore() + hse.score()));
+        output(hse.player().getName() + "'s " + hse.reason() + ": "
+            + hse.getHand().debugString() + "|" + context.cutCard + " scores "
+            + hse.score() + " | " + hse.player().getScore() + "->" + (hse.player().getScore() + hse.score()));
         break;
       }
       case SCORE: {
@@ -88,7 +89,7 @@ public final class TextCribbageUi extends CribbageUi {
       throw new RuntimeException(this.getClass() + " was asked to choose a card for non-human player " + activePlayer);
     }
     if (!activePlayer.canPlay(context.runningCount)) {
-      output(activePlayer + " cannot play!");
+      System.out.println(activePlayer + " cannot play!");
       return null;
     }
     output("Last Played: " + context.cardsPlayed);

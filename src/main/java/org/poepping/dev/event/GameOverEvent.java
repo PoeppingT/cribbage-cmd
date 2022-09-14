@@ -1,6 +1,6 @@
 package org.poepping.dev.event;
 
-import org.poepping.dev.player.CribbagePlayer;
+import org.poepping.dev.gamelogic.player.CribbagePlayer;
 
 public class GameOverEvent extends Event {
   private CribbagePlayer winner;

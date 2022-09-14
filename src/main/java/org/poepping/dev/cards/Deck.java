@@ -14,29 +14,40 @@
 
 package org.poepping.dev.cards;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
-import java.util.LinkedList;
 
 public class Deck {
-  private final LinkedList<Card> defaultDeck;
-  private LinkedList<Card> deck;
+  private static final Logger LOGGER = LoggerFactory.getLogger(Deck.class);
 
-  private Deck(LinkedList<Card> deck) {
+  private final ArrayList<Card> defaultDeck;
+  private ArrayList<Card> deck;
+
+  private Deck(ArrayList<Card> deck) {
     this.defaultDeck = deck;
-    this.deck = new LinkedList<>(defaultDeck);
+    this.deck = new ArrayList<>(defaultDeck);
   }
 
   public Card draw() {
-    return deck.removeFirst();
+    if (deck.size() == 0) {
+      throw new IllegalArgumentException("Cannot draw a card from an empty deck!");
+    }
+    Card drew = deck.remove(0);
+    LOGGER.debug("Drew {}", drew);
+    return drew;
   }
 
   public void shuffle() {
     ArrayList<Card> deckToShuffle = new ArrayList<>(defaultDeck);
-    deck = new LinkedList<Card>();
+    LOGGER.debug("Shuffling {}", deckToShuffle);
+    deck = new ArrayList<Card>();
     while (!deckToShuffle.isEmpty()) {
       int randomIndex = (int)(Math.random() * (double)deckToShuffle.size());
       deck.add(deckToShuffle.remove(randomIndex));
     }
+    LOGGER.debug("Shuffled {}", deck);
   }
 
   public String toString() {
@@ -82,11 +93,14 @@ public class Deck {
 
     public Deck build() {
       // if any of suits or values is null or empty, just return an empty deck.
-      LinkedList<Card> deck = new LinkedList<>();
+      ArrayList<Card> deck = new ArrayList<>();
+      LOGGER.debug("Building a deck from suits {} values {}", suits, values);
       if (suits != null && values != null) {
         for (Card.Suit suit : suits) {
           for (Card.Value value : values) {
-            deck.add(new Card(suit, value));
+            Card c = new Card(suit, value);
+            LOGGER.trace("Adding {} to deck", c);
+            deck.add(c);
           }
         }
       }

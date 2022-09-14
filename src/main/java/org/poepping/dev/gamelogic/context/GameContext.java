@@ -2,7 +2,8 @@ package org.poepping.dev.gamelogic.context;
 
 import org.poepping.dev.cards.Card;
 import org.poepping.dev.gamelogic.Config;
-import org.poepping.dev.player.CribbagePlayer;
+import org.poepping.dev.gamelogic.player.CribbagePlayer;
+import org.poepping.dev.gamelogic.player.Table;
 import org.poepping.dev.ui.CribbageUi;
 
 import java.util.ArrayList;
@@ -17,7 +18,7 @@ public class GameContext {
   public final Config config;
 
   public GameState state;
-  public List<CribbagePlayer> players;
+  public Table table;
   public CribbagePlayer whoseCrib;
   public CribbagePlayer whoseTurn;
   public Card cutCard;
@@ -29,20 +30,13 @@ public class GameContext {
     this.config = b.config;
 
     this.state = b.state;
-    this.players = b.players;
+    this.table = b.table;
     this.whoseCrib = b.whoseCrib;
     this.whoseTurn = b.whoseTurn;
     this.cutCard = b.cutCard;
     this.cardsPlayed = b.cardsPlayed;
     this.runningCount = b.runningCount;
     this.ui = b.ui;
-  }
-
-  public void addPlayer(CribbagePlayer player) {
-    if (state != null && state != GameState.NOT_STARTED) {
-      throw new RuntimeException("Cannot add a player to a game with state: " + state);
-    }
-    players.add(player);
   }
 
   public static Builder builder() {
@@ -53,7 +47,7 @@ public class GameContext {
     return new Builder()
       .config(otherContext.config)
       .state(otherContext.state)
-      .players(otherContext.players)
+      .table(otherContext.table)
       .whoseCrib(otherContext.whoseCrib)
       .whoseTurn(otherContext.whoseTurn)
       .cutCard(otherContext.cutCard)
@@ -64,7 +58,7 @@ public class GameContext {
   public static class Builder {
     private Config config = Config.defaultConfig();
     private GameState state = GameState.NOT_STARTED;
-    private List<CribbagePlayer> players = new ArrayList<>();
+    private Table table = new Table();
     private CribbagePlayer whoseCrib;
     private CribbagePlayer whoseTurn;
     private Card cutCard;
@@ -81,13 +75,8 @@ public class GameContext {
       return this;
     }
 
-    public Builder players(CribbagePlayer... players) {
-      this.players = List.of(players);
-      return this;
-    }
-
-    public Builder players(List<CribbagePlayer> players) {
-      this.players = players;
+    public Builder table(Table table) {
+      this.table = table;
       return this;
     }
 

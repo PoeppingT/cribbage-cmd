@@ -4,7 +4,7 @@ import org.poepping.dev.cards.Card;
 import org.poepping.dev.cards.Hand;
 import org.poepping.dev.event.ScoreEvent;
 import org.poepping.dev.gamelogic.exceptions.GameOverException;
-import org.poepping.dev.player.CribbagePlayer;
+import org.poepping.dev.gamelogic.player.CribbagePlayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
