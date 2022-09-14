@@ -3,20 +3,20 @@ package org.poepping.dev.player;
 import org.poepping.dev.cards.Card;
 import org.poepping.dev.cards.Hand;
 import org.poepping.dev.gamelogic.strategy.AiStrategy;
-
-import java.util.Stack;
+import org.poepping.dev.ui.CribbageUi;
 
 public class AiCribbagePlayer extends CribbagePlayer {
 
   private AiStrategy.Level aiLevel;
 
-  public AiCribbagePlayer(String name) {
-    super(name);
+  public AiCribbagePlayer(CribbageUi ui, String name) {
+    super(ui, name);
     this.setLevel(AiStrategy.DEFAULT_LEVEL);
   }
 
   @Override
-  public Card[] chooseCardsToDiscardToCrib(int numberToDiscard) {
+  public Card[] chooseCardsToDiscardToCrib() {
+    final int numberToDiscard = hand.size() - 4;
     Card[] discardedCards = new Card[numberToDiscard];
     Hand handCopy = Hand.copyOf(hand);
     for (int i = 0; i < numberToDiscard; i++) {
@@ -28,13 +28,8 @@ public class AiCribbagePlayer extends CribbagePlayer {
   }
 
   @Override
-  public Card chooseCardToPlay(Stack<Card> runningCards, int runningCount) {
-    return aiLevel.strategy().chooseCardToPlay(hand, runningCards, runningCount);
-  }
-
-  @Override
-  public void waitToContinue() {
-    // do nothing, AI doesn't need to wait.
+  public Card chooseCardToPlay() {
+    return aiLevel.strategy().chooseCardToPlay(hand, ui.getContext().cardsPlayed, ui.getContext().runningCount);
   }
 
   public void levelUp() {

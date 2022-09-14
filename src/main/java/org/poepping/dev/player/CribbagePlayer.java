@@ -16,12 +16,13 @@ package org.poepping.dev.player;
 
 import org.poepping.dev.cards.Card;
 import org.poepping.dev.cards.Hand;
+import org.poepping.dev.ui.CribbageUi;
 
 import java.util.Optional;
-import java.util.Stack;
 
 public abstract class CribbagePlayer {
-  private final String name;
+  final String name;
+  final CribbageUi ui;
 
   private int score;
 
@@ -29,18 +30,19 @@ public abstract class CribbagePlayer {
   Hand crib;
   Hand hand;
 
-  public CribbagePlayer(String name) {
+  public CribbagePlayer(CribbageUi ui, String name) {
     this.name = name;
+    this.ui = ui;
     score = 0;
     discard = new Hand();
     crib = new Hand();
     hand = new Hand();
   }
 
-  abstract Card[] chooseCardsToDiscardToCrib(int numberToDiscard);
+  abstract Card[] chooseCardsToDiscardToCrib();
 
-  public void discardToCrib(Hand crib, int numberToDiscard) {
-    Card[] cards = chooseCardsToDiscardToCrib(numberToDiscard);
+  public void discardToCrib(Hand crib) {
+    Card[] cards = chooseCardsToDiscardToCrib();
     for (Card card : cards) {
       crib.add(card);
       hand.remove(card);
@@ -51,9 +53,7 @@ public abstract class CribbagePlayer {
    * should be null to indicate that no card can be played
    * @return
    */
-  abstract Card chooseCardToPlay(Stack<Card> runningCards, int runningCount);
-
-  public abstract void waitToContinue();
+  abstract Card chooseCardToPlay();
 
   public boolean canPlay(int runningCount) {
     int numberLeftTo31 = 31 - runningCount;
@@ -65,8 +65,8 @@ public abstract class CribbagePlayer {
     return false;
   }
 
-  public Optional<Card> playCard(Stack<Card> runningCards, int runningCount) {
-    Card chosenCard = chooseCardToPlay(runningCards, runningCount);
+  public Optional<Card> playCard() {
+    Card chosenCard = chooseCardToPlay();
     if (chosenCard != null) {
       hand.remove(chosenCard);
       discard.add(chosenCard);
@@ -97,6 +97,10 @@ public abstract class CribbagePlayer {
     return score;
   }
 
+  public Hand getHand() {
+    return hand;
+  }
+
   public Hand getCrib() {
     return crib;
   }
@@ -107,6 +111,10 @@ public abstract class CribbagePlayer {
 
   public String getName() {
     return name;
+  }
+
+  public CribbageUi getUi() {
+    return this.ui;
   }
 
   public void dealCard(Card card) {

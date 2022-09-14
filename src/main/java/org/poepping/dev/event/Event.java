@@ -7,7 +7,8 @@ public abstract class Event {
     CHECK,
     CUT,
     GAME_OVER,
-    SCORE;
+    SCORE,
+    HAND_SCORE;
   }
 
   public abstract Type getType();

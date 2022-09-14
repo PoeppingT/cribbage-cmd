@@ -2,12 +2,9 @@ package org.poepping.dev.gamelogic.context;
 
 import org.poepping.dev.cards.Card;
 import org.poepping.dev.gamelogic.Config;
-import org.poepping.dev.player.AiCribbagePlayer;
 import org.poepping.dev.player.CribbagePlayer;
-import org.poepping.dev.player.HumanCribbagePlayer;
+import org.poepping.dev.ui.CribbageUi;
 
-import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -26,24 +23,26 @@ public class GameContext {
   public Card cutCard;
   public Stack<Card> cardsPlayed;
   public int runningCount;
-
-  final List<GameContextObserver> observers;
+  public CribbageUi ui;
 
   private GameContext(Builder b) {
-    this.state = GameState.DEAL;
     this.config = b.config;
 
-    observers = new ArrayList<GameContextObserver>();
+    this.state = b.state;
+    this.players = b.players;
+    this.whoseCrib = b.whoseCrib;
+    this.whoseTurn = b.whoseTurn;
+    this.cutCard = b.cutCard;
+    this.cardsPlayed = b.cardsPlayed;
+    this.runningCount = b.runningCount;
+    this.ui = b.ui;
   }
 
-  public void addObserver(GameContextObserver observer) {
-    observers.add(observer);
-  }
-
-  public void updateObservers() {
-    for (GameContextObserver observer : observers) {
-      observer.update(this);
+  public void addPlayer(CribbagePlayer player) {
+    if (state != null && state != GameState.NOT_STARTED) {
+      throw new RuntimeException("Cannot add a player to a game with state: " + state);
     }
+    players.add(player);
   }
 
   public static Builder builder() {
@@ -64,13 +63,14 @@ public class GameContext {
 
   public static class Builder {
     private Config config = Config.defaultConfig();
-    private GameState state = GameState.DEAL;
-    private List<CribbagePlayer> players;
+    private GameState state = GameState.NOT_STARTED;
+    private List<CribbagePlayer> players = new ArrayList<>();
     private CribbagePlayer whoseCrib;
     private CribbagePlayer whoseTurn;
     private Card cutCard;
     private Stack<Card> cardsPlayed;
     private int runningCount;
+    private CribbageUi ui;
     
     private Builder() {
 
@@ -121,19 +121,12 @@ public class GameContext {
       return this;
     }
 
+    public Builder ui(CribbageUi ui) {
+      this.ui = ui;
+      return this;
+    }
+
     public GameContext build() {
-      if (players == null) {
-        players = new ArrayList<>();
-        int numberHumans = config.humanPlayers;
-        for (int i = 0; i < config.numberOfPlayers; i++) {
-          if (numberHumans > 0) {
-            players.add(new HumanCribbagePlayer("HUMAN" + i));
-            numberHumans--;
-          } else {
-            players.add(new AiCribbagePlayer("AI" + i));
-          }
-        }
-      }
       return new GameContext(this);
     }
   }

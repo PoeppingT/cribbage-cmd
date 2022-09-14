@@ -28,8 +28,10 @@ import org.poepping.dev.player.CribbagePlayer;
 import org.poepping.dev.player.HumanCribbagePlayer;
 import org.poepping.dev.ui.CribbageUi;
 import org.poepping.dev.ui.UiFactory;
+import org.poepping.dev.ui.UiType;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public class CribbageGame implements Runnable {
   private boolean doQuit = false;
@@ -37,37 +39,37 @@ public class CribbageGame implements Runnable {
   private final Deck deck = Deck.standard();
   private final Scoring scoring;
 
-  private GameState gameState;
-  private Card cutCard;
-  private int runningCount;
-  private Stack<Card> runningCards;
-  private boolean aiTurn;
-  private boolean aiCrib;
-  // for now, we assume one AI player and one human player. can be extended for 3-handed or 4-handed
-  private CribbagePlayer aiPlayer;
-  private CribbagePlayer humanPlayer;
+  // private GameState gameState;
+  // private Card cutCard;
+  // private int runningCount;
+  // private Stack<Card> runningCards;
+  // private boolean aiTurn;
+  // private boolean aiCrib;
+  // // for now, we assume one AI player and one human player. can be extended for 3-handed or 4-handed
+  // private CribbagePlayer aiPlayer;
+  // private CribbagePlayer humanPlayer;
   private boolean lastPlayerChecked = false;
 
   private GameContext context;
-  private CribbageUi ui;
 
   private CribbageGame(Builder b) {
     Config config = b.config;
-    ui = UiFactory.create(config.uiType);
-    scoring = new Scoring(config.maxScore);
-    
-    runningCount = 0;
-    runningCards = new Stack<>();
-    
-    aiPlayer = new AiCribbagePlayer("AI");
-    humanPlayer = new HumanCribbagePlayer("HUMAN");
-    gameState = GameState.DEAL;
     context = GameContext.builder()
-      .config(config)
-      .players(aiPlayer, humanPlayer)
-      .state(gameState)
-      .build();
-    aiCrib = config.aiCribFirst;
+        .config(config)
+        .runningCount(0)
+        .cardsPlayed(new Stack<>())
+        .build();
+    CribbageUi ui = UiFactory.create(config.uiType, context);
+    CribbageUi aiUi = UiFactory.create(UiType.NO_OP, context);
+    scoring = new Scoring(config.maxScore);
+
+    CribbagePlayer ai = new AiCribbagePlayer(aiUi, "AI");
+    CribbagePlayer human = new HumanCribbagePlayer(ui, "HUMAN");
+    
+    context.addPlayer(ai);
+    context.addPlayer(human);
+    context.whoseCrib = config.aiCribFirst ? ai : human;
+    context.whoseTurn = config.aiCribFirst ? human : ai;
   }
 
   @Override
@@ -75,133 +77,152 @@ public class CribbageGame implements Runnable {
     // infinite loop of gametime? game loop.
     while (!doQuit) {
       // we check whether the game is over every time we award points
-      switch (gameState) {
+      switch (context.state) {
+        case NOT_STARTED:
+        case FINISHED: {
+          context.state = GameState.DEAL;
+          break;
+        }
         case DEAL: {
           // reset player hands, shuffle the deck, deal out 6 cards to each player
-          aiCrib = !aiCrib;
-          aiTurn = !aiCrib;
-          aiPlayer.reset();
-          humanPlayer.reset();
-          runningCards.clear();
-          runningCount = 0;
-          cutCard = null;
+          // move the crib to the left
+          context.whoseCrib = context.players.get((context.players.indexOf(context.whoseCrib) + 1)
+              % context.players.size());
+          // next turn is to the left of the crib
+          context.whoseTurn = context.players.get((context.players.indexOf(context.whoseCrib) + 1)
+              % context.players.size());
+          for (CribbagePlayer player : context.players) {
+            player.reset();
+          }
+          context.cardsPlayed.clear();
+          context.runningCount = 0;
+          context.cutCard = null;
           deck.shuffle();
-          if (aiCrib) {
-            // human gets first card, ai gets second
-            for (int i = 0; i < 6; i++) {
-              humanPlayer.dealCard(deck.draw());
-              aiPlayer.dealCard(deck.draw());
-            }
-          } else {
-            // ai get first card, human gets second
-            for (int i = 0; i < 6; i++) {
-              aiPlayer.dealCard(deck.draw());
-              humanPlayer.dealCard(deck.draw());
+          for (int i = 0; i < 6; i++) {
+            int cribIndex = context.players.indexOf(context.whoseCrib);
+            // start from one because crib player gets dealt to last
+            // TODO could we use whoseTurn for this?
+            for (int j = 1; j <= context.players.size(); j++) {
+              context.players.get((cribIndex + j) % context.players.size()).dealCard(deck.draw());
             }
           }
-          gameState = GameState.DISCARD_TO_CRIB;
+          context.state = GameState.DISCARD_TO_CRIB;
           break;
         }
         case DISCARD_TO_CRIB: {
-          ui.displayGame(context);
-          Hand crib = aiCrib ? aiPlayer.getCrib() : humanPlayer.getCrib();
-          aiPlayer.discardToCrib(crib, 2);
-          humanPlayer.discardToCrib(crib, 2);
-          gameState = GameState.FLIP_CUT_CARD;
+          callUi(CribbageUi::displayGame);
+          Hand crib = context.whoseCrib.getCrib();
+          for (CribbagePlayer player : context.players) {
+            player.discardToCrib(crib);
+          }
+          context.state = GameState.FLIP_CUT_CARD;
           break;
         }
         case FLIP_CUT_CARD: {
           // TODO implement actual cutting
-          final int NOBS = 2;
-          cutCard = deck.draw();
-          ui.displayCutEvent(CutEvent.builder().card(cutCard).build());
-          if (cutCard.getValue().equals(Card.Value.JACK)) {
-            CribbagePlayer dealer = aiCrib ? aiPlayer : humanPlayer;
-            ui.displayScoreEvent(ScoreEvent.builder()
-                .score(NOBS).player(dealer).reason("Nobs!").build());
-            givePointsAndMaybeEndGame(dealer, NOBS);
+          final int nobsPoints = 2;
+          context.cutCard = deck.draw();
+          callUi(ui -> ui.handle(CutEvent.builder().card(context.cutCard).build()));
+          if (context.cutCard.getValue().equals(Card.Value.JACK)) {
+            CribbagePlayer dealer = context.whoseCrib;
+            callUi(ui -> ui.handle(ScoreEvent.builder()
+                .score(nobsPoints).player(dealer).reason("Nobs!").build()));
+            givePointsAndMaybeEndGame(dealer, nobsPoints);
           }
-          gameState = GameState.PLAY_CARD;
+          context.state = GameState.PLAY_CARD;
           break;
         }
         case PLAY_CARD: {
-          ui.displayGame(context);
-          CribbagePlayer player = aiTurn ? aiPlayer : humanPlayer;
+          callUi(CribbageUi::displayGame);
+          CribbagePlayer player = context.whoseTurn;
           // assuming here that playCard returns a legal card to play. responsibility is on the player
-          Optional<Card> cardPlayed = player.playCard(runningCards, runningCount);
+          Optional<Card> cardPlayed = player.playCard();
           if (cardPlayed.isPresent()) {
-            ui.displayCardPlayEvent(CardPlayEvent.builder().player(player).card(cardPlayed.get()).build());
-            ScoreEvent peggingPoints = Scoring.peggingPlay(runningCount, runningCards, cardPlayed.get());
+            callUi(ui -> ui.handle(CardPlayEvent.builder().player(player).card(cardPlayed.get()).build()));
+            ScoreEvent peggingPoints = Scoring.peggingPlay(context.runningCount, context.cardsPlayed, cardPlayed.get());
             if (peggingPoints != null) {
-              System.out.println(peggingPoints.reason());
+              // TODO we should change this?
+              callUi(ui -> ui.handle(ScoreEvent.builder()
+                  .score(peggingPoints.score()).reason(peggingPoints.reason()).player(player).build()));
               givePointsAndMaybeEndGame(player, peggingPoints.score());
             }
-            runningCards.add(cardPlayed.get());
-            runningCount += cardPlayed.get().getValue().getValue();
-            if (runningCount >= 31) {
-              runningCount = 0;
-              runningCards.clear(); // we start over from scratch after hitting 31.
+            context.cardsPlayed.add(cardPlayed.get());
+            context.runningCount += cardPlayed.get().getValue().getValue();
+            if (context.runningCount >= 31) {
+              context.runningCount = 0;
+              context.cardsPlayed.clear(); // we start over from scratch after hitting 31.
             }
             lastPlayerChecked = false;
           } else {
-            ui.handle(CheckEvent.builder().player(player).build());
+            callUi(ui -> ui.handle(CheckEvent.builder().player(player).build()));
             if (lastPlayerChecked) {
-              // TODO this logic doesn't work
               // both check. award one point to this player and continue
-              ui.handle(ScoreEvent.builder()
-                  .score(1).player(player).reason("Both players check.").build());
+              callUi(ui -> ui.handle(ScoreEvent.builder()
+                  .score(1).player(player).reason("Both players check").build()));
               givePointsAndMaybeEndGame(player, 1);
               lastPlayerChecked = false;
-              runningCount = 0;
-              runningCards.clear();
+              context.runningCount = 0;
+              context.cardsPlayed.clear();
             } else {
               lastPlayerChecked = true;
             }
           }
-          aiTurn = !aiTurn;
-          if (aiPlayer.outOfCards() && humanPlayer.outOfCards()) {
-            gameState = GameState.SCORE_HANDS;
+          context.whoseTurn = context.players.get((context.players.indexOf(context.whoseTurn) + 1)
+              % context.players.size());
+          boolean everyoneOutOfCards = true;
+          for (CribbagePlayer p : context.players) {
+            everyoneOutOfCards = everyoneOutOfCards && p.outOfCards();
+          }
+          if (everyoneOutOfCards) {
+            context.state = GameState.SCORE_HANDS;
             if (cardPlayed.isPresent()) {
               // that means this player just played the last card
-              ui.handle(ScoreEvent.builder()
-                  .player(player).score(1).reason("Last card.").build());
+              callUi(ui -> ui.handle(ScoreEvent.builder()
+                  .player(player).score(1).reason("Last card").build()));
               givePointsAndMaybeEndGame(player, 1);
             }
           }
           break;
         }
         case SCORE_HANDS: {
-          // do this for ordering: non-crib counts first
-          CribbagePlayer[] players = aiCrib 
-            ? new CribbagePlayer[]{humanPlayer, aiPlayer}
-            : new CribbagePlayer[]{aiPlayer, humanPlayer};
-          for (CribbagePlayer player : players) {
-            int handPoints = Scoring.scoreHand(player.getDiscard(), cutCard);
-            System.out.println(player.getDiscard().debugString() + " | " + cutCard.toString());
-            System.out.println(player + "'s hand scores " + handPoints);
-            System.out.println();
+          int cribPlayerIndex = context.players.indexOf(context.whoseCrib);
+          // start from one becase non-crib counts first
+          for (int i = 1; i <= context.players.size(); i++) {
+            CribbagePlayer player = context.players.get((cribPlayerIndex + i) % context.players.size());
+            int handPoints = Scoring.scoreHand(player.getDiscard(), context.cutCard);
+            // TODO maybe the extension logic isn't great for builders? score/player functions in ScoreEvent
+            //      return ScoreEvent.Builder objects (as it should) but we need a HandScoreEvent.Builder object
+            // ui.handle(((HandScoreEvent.Builder) HandScoreEvent.builder()
+            //     .hand(player.getDiscard())
+            //     .score(handPoints)
+            //     .player(player)).build());
+            callUi(ui -> ui.handle(HandScoreEvent.builder()
+                .hand(player.getDiscard())
+                .score(handPoints)
+                .reason("Hand") // could be improved
+                .player(player).build()));
             givePointsAndMaybeEndGame(player, handPoints);
           }
-          gameState = GameState.SCORE_CRIB;
+          context.state = GameState.SCORE_CRIB;
           break;
         }
         case SCORE_CRIB: {
           // theoretically the crib is empty if it isn't your crib, but let's not take chances
-          CribbagePlayer player = aiCrib ? aiPlayer : humanPlayer;
-          int cribPoints = Scoring.scoreCrib(player.getCrib(), cutCard);
-          System.out.println(player.getCrib().debugString() + " | " + cutCard.toString());
-          System.out.println(player + "'s crib scores " + cribPoints);
-          System.out.println();
+          CribbagePlayer player = context.whoseCrib;
+          int cribPoints = Scoring.scoreCrib(player.getCrib(), context.cutCard);
+          callUi(ui -> ui.handle(HandScoreEvent.builder()
+              .hand(player.getCrib())
+              .score(cribPoints)
+              .reason("Crib") // could be improved
+              .player(player).build()));
           givePointsAndMaybeEndGame(player, cribPoints);
-          output("");
-          gameState = GameState.DEAL;
+          context.state = GameState.DEAL;
           break;
         }
         default: {
           // impossible to reach. adding a default statement to make checkstyle happy
         }
       }
-      humanPlayer.waitToContinue();
     }
   }
 
@@ -209,8 +230,14 @@ public class CribbageGame implements Runnable {
     try {
       scoring.givePoints(player, points);
     } catch (GameOverException goe) {
-      ui.handle(GameOverEvent.builder().winner(player).build());
+      callUi(ui -> ui.handle(GameOverEvent.builder().winner(player).build()));
       doQuit = true;
+    }
+  }
+
+  private void callUi(Consumer<CribbageUi> uiFunction) {
+    for (CribbagePlayer player : context.players) {
+      uiFunction.accept(player.getUi());
     }
   }
 

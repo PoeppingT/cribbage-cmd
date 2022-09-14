@@ -7,7 +7,7 @@ public class ScoreEvent extends Event {
   private final String reason;
   private final CribbagePlayer player;
 
-  private ScoreEvent(Builder builder) {
+  ScoreEvent(Builder builder) {
     score = builder.score;
     reason = builder.reason;
     player = builder.player;
@@ -52,14 +52,14 @@ public class ScoreEvent extends Event {
       this.score = score;
       return this;
     }
+    
+    public int score() {
+      return this.score;
+    }
 
     public Builder addScore(int score) {
       this.score += score;
       return this;
-    }
-
-    public int score() {
-      return this.score;
     }
 
     public Builder reason(String reason) {
@@ -68,7 +68,8 @@ public class ScoreEvent extends Event {
     }
 
     public Builder addReason(String reason) {
-      this.reason = this.reason + System.lineSeparator() + reason;
+      // this.reason = this.reason + System.lineSeparator() + reason;
+      this.reason = this.reason + " " + reason;
       return this;
     }
 
