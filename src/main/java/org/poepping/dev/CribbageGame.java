@@ -17,6 +17,7 @@ package org.poepping.dev;
 import org.poepping.dev.cards.Card;
 import org.poepping.dev.cards.Deck;
 import org.poepping.dev.cards.Hand;
+import org.poepping.dev.event.*;
 import org.poepping.dev.gamelogic.Config;
 import org.poepping.dev.gamelogic.Scoring;
 import org.poepping.dev.gamelogic.context.GameContext;
@@ -25,6 +26,8 @@ import org.poepping.dev.gamelogic.exceptions.GameOverException;
 import org.poepping.dev.player.AiCribbagePlayer;
 import org.poepping.dev.player.CribbagePlayer;
 import org.poepping.dev.player.HumanCribbagePlayer;
+import org.poepping.dev.ui.CribbageUi;
+import org.poepping.dev.ui.UiFactory;
 
 import java.util.*;
 
@@ -46,9 +49,11 @@ public class CribbageGame implements Runnable {
   private boolean lastPlayerChecked = false;
 
   private GameContext context;
+  private CribbageUi ui;
 
   private CribbageGame(Builder b) {
     Config config = b.config;
+    ui = UiFactory.create(config.uiType);
     scoring = new Scoring(config.maxScore);
     
     runningCount = 0;
@@ -98,7 +103,7 @@ public class CribbageGame implements Runnable {
           break;
         }
         case DISCARD_TO_CRIB: {
-          printGameState();
+          ui.displayGame(context);
           Hand crib = aiCrib ? aiPlayer.getCrib() : humanPlayer.getCrib();
           aiPlayer.discardToCrib(crib, 2);
           humanPlayer.discardToCrib(crib, 2);
@@ -107,26 +112,28 @@ public class CribbageGame implements Runnable {
         }
         case FLIP_CUT_CARD: {
           // TODO implement actual cutting
+          final int NOBS = 2;
           cutCard = deck.draw();
-          output(cutCard + " cut.");
+          ui.displayCutEvent(CutEvent.builder().card(cutCard).build());
           if (cutCard.getValue().equals(Card.Value.JACK)) {
             CribbagePlayer dealer = aiCrib ? aiPlayer : humanPlayer;
-            output(cutCard + " cut! Awarding 2 points to " + dealer);
-            givePointsAndMaybeEndGame(dealer, 2);
+            ui.displayScoreEvent(ScoreEvent.builder()
+                .score(NOBS).player(dealer).reason("Nobs!").build());
+            givePointsAndMaybeEndGame(dealer, NOBS);
           }
           gameState = GameState.PLAY_CARD;
           break;
         }
         case PLAY_CARD: {
-          printGameState();
+          ui.displayGame(context);
           CribbagePlayer player = aiTurn ? aiPlayer : humanPlayer;
           // assuming here that playCard returns a legal card to play. responsibility is on the player
           Optional<Card> cardPlayed = player.playCard(runningCards, runningCount);
           if (cardPlayed.isPresent()) {
-            output(player.getName() + " played " + cardPlayed.get());
-            Scoring.ScoreEvent peggingPoints = Scoring.peggingPlay(runningCount, runningCards, cardPlayed.get());
+            ui.displayCardPlayEvent(CardPlayEvent.builder().player(player).card(cardPlayed.get()).build());
+            ScoreEvent peggingPoints = Scoring.peggingPlay(runningCount, runningCards, cardPlayed.get());
             if (peggingPoints != null) {
-              System.out.println(peggingPoints.message());
+              System.out.println(peggingPoints.reason());
               givePointsAndMaybeEndGame(player, peggingPoints.score());
             }
             runningCards.add(cardPlayed.get());
@@ -137,11 +144,12 @@ public class CribbageGame implements Runnable {
             }
             lastPlayerChecked = false;
           } else {
-            output(player.getName() + ": checks");
+            ui.handle(CheckEvent.builder().player(player).build());
             if (lastPlayerChecked) {
               // TODO this logic doesn't work
               // both check. award one point to this player and continue
-              output("Both players check. Awarding " + player + " 1 point.");
+              ui.handle(ScoreEvent.builder()
+                  .score(1).player(player).reason("Both players check.").build());
               givePointsAndMaybeEndGame(player, 1);
               lastPlayerChecked = false;
               runningCount = 0;
@@ -155,7 +163,8 @@ public class CribbageGame implements Runnable {
             gameState = GameState.SCORE_HANDS;
             if (cardPlayed.isPresent()) {
               // that means this player just played the last card
-              output(player + ": last card for 1");
+              ui.handle(ScoreEvent.builder()
+                  .player(player).score(1).reason("Last card.").build());
               givePointsAndMaybeEndGame(player, 1);
             }
           }
@@ -200,30 +209,8 @@ public class CribbageGame implements Runnable {
     try {
       scoring.givePoints(player, points);
     } catch (GameOverException goe) {
-      output(goe.getMessage());
+      ui.handle(GameOverEvent.builder().winner(player).build());
       doQuit = true;
-    }
-  }
-
-  private void printGameState() {
-    System.out.println("================================\n"
-        + aiPlayer.scoreboard(aiCrib) + "\t\t" + humanPlayer.scoreboard(!aiCrib)
-        + "\n================================");
-    if (gameState == GameState.PLAY_CARD) {
-      System.out.println("Count: " + runningCount);
-    }
-    if (gameState == GameState.SCORE_CRIB
-        || gameState == GameState.SCORE_HANDS) {
-      System.out.println("cut: " + (cutCard != null ? cutCard : ""));
-    }
-  }
-
-  private void output(String message) {
-    System.out.println(message);
-    try {
-      Thread.sleep(1000L);
-    } catch (InterruptedException ignored) {
-      // ignored
     }
   }
 

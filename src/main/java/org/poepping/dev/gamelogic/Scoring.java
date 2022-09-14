@@ -2,6 +2,7 @@ package org.poepping.dev.gamelogic;
 
 import org.poepping.dev.cards.Card;
 import org.poepping.dev.cards.Hand;
+import org.poepping.dev.event.ScoreEvent;
 import org.poepping.dev.gamelogic.exceptions.GameOverException;
 import org.poepping.dev.player.CribbagePlayer;
 import org.slf4j.Logger;
@@ -19,66 +20,6 @@ public final class Scoring {
 
   public Scoring(int pointsToWin) {
     this.pointsToWin = pointsToWin;
-  }
-
-  public static class ScoreEvent {
-    private final int score;
-    private final String message;
-
-    private ScoreEvent(Builder builder) {
-      score = builder.score;
-      message = builder.message;
-    }
-
-    public int score() {
-      return score;
-    }
-
-    public String message() {
-      return message;
-    }
-
-    public static Builder builder() {
-      return new Builder();
-    }
-
-    public static class Builder {
-      private int score = 0;
-      private String message = "";
-
-      public Builder() {
-
-      }
-
-      public Builder score(int score) {
-        this.score = score;
-        return this;
-      }
-
-      public Builder addScore(int score) {
-        this.score += score;
-        return this;
-      }
-
-      public Builder message(String message) {
-        this.message = message;
-        return this;
-      }
-
-      public Builder addMessage(String message) {
-        this.message = new StringBuilder(this.message).append(System.lineSeparator()).append(message).toString();
-        return this;
-      }
-
-      public ScoreEvent build() {
-        return new ScoreEvent(this);
-      }
-
-      @Override
-      public String toString() {
-        return "ScoreEvent: " + score + " for: \n" + message;
-      }
-    }
   }
 
   public static int scoreHand(Hand hand, Card cutCard) {
@@ -258,7 +199,7 @@ public final class Scoring {
       }
       pegEvent
           .addScore(pointsToPlayer)
-          .addMessage(numPairs + (numPairs > 1 ? " pairs " : " pair ") + "for " + pointsToPlayer + "!");
+          .addReason(numPairs + (numPairs > 1 ? " pairs " : " pair ") + "for " + pointsToPlayer + "!");
       LOGGER.debug("found pairs, pegEvent: {}", pegEvent);
     } else {
       LOGGER.debug("no pairs");
@@ -317,7 +258,7 @@ public final class Scoring {
     if (highestRun > 2) {
       pegEvent
           .addScore(highestRun)
-          .addMessage("run of " + highestRun + " for " + highestRun + "!");
+          .addReason("run of " + highestRun + " for " + highestRun + "!");
     }
 
     // put the cards back
@@ -330,16 +271,16 @@ public final class Scoring {
     if (cardPlayed.getValue().getValue() + runningCount == 15) {
       pegEvent
           .addScore(2)
-          .addMessage("15 for 2!")
+          .addReason("15 for 2!")
           .build();
     }
     if (cardPlayed.getValue().getValue() + runningCount == 31) {
       pegEvent
           .addScore(2)
-          .addMessage("31 for 2!");
+          .addReason("31 for 2!");
     }
     // if we found anything, return it. otherwise no score update.
-    if (pegEvent.score > 0) {
+    if (pegEvent.score() > 0) {
       return pegEvent.build();
     }
     return null;

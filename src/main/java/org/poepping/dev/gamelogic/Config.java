@@ -1,19 +1,23 @@
 package org.poepping.dev.gamelogic;
 
 import org.poepping.dev.gamelogic.strategy.AiStrategy;
+import org.poepping.dev.ui.UiType;
 
 public class Config {
-  public int numberOfPlayers;
-  public int humanPlayers;
-  public int maxScore;
-  public boolean aiCribFirst;
-  public AiStrategy.Level aiDifficulty;
+  public final int numberOfPlayers;
+  public final int humanPlayers;
+  public final int maxScore;
+  public final boolean aiCribFirst;
+  public final AiStrategy.Level aiDifficulty;
+  public final UiType uiType;
 
   private Config(Builder b) {
     this.numberOfPlayers = b.numberOfPlayers;
     this.humanPlayers = b.humanPlayers;
     this.maxScore = b.maxScore;
     this.aiCribFirst = b.aiCribFirst;
+    this.aiDifficulty = b.aiDifficulty;
+    this.uiType = UiType.TEXT;
   }
 
   public static Builder builder() {
@@ -30,6 +34,7 @@ public class Config {
     private int maxScore = 121;
     private boolean aiCribFirst = true; // who goes first? what if no AIs?
     private AiStrategy.Level aiDifficulty = AiStrategy.DEFAULT_LEVEL;
+    private UiType uiType = UiType.TEXT;
 
     private Builder() {
 
@@ -52,6 +57,11 @@ public class Config {
 
     public Builder aiDifficulty(AiStrategy.Level level) {
       this.aiDifficulty = level;
+      return this;
+    }
+
+    public Builder uiType(UiType uiType) {
+      this.uiType = uiType;
       return this;
     }
 

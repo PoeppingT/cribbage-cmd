@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Stack;
 
 /**
- * 
  * Follows a basic set of discarding rules:
  *  1. maximize existing points in hand
  * Follows a basic set of playing rules:
