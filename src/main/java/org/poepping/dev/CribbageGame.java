@@ -15,6 +15,8 @@
 package org.poepping.dev;
 
 import org.poepping.dev.cards.Card;
+import org.poepping.dev.cards.Card.Suit;
+import org.poepping.dev.cards.Card.Value;
 import org.poepping.dev.cards.Deck;
 import org.poepping.dev.cards.Hand;
 import org.poepping.dev.event.*;
@@ -103,6 +105,7 @@ public class CribbageGame implements Runnable {
         }
         case FLIP_CUT_CARD: {
           // TODO implement actual cutting
+          context.state = GameState.PLAY_CARD;
           final int nobsPoints = 2;
           context.cutCard = deck.draw();
           callUi(ui -> ui.handle(CutEvent.builder().card(context.cutCard).build()));
@@ -112,7 +115,6 @@ public class CribbageGame implements Runnable {
                 .score(nobsPoints).player(dealer).reason("Nobs!").build()));
             givePointsAndMaybeEndGame(dealer, nobsPoints);
           }
-          context.state = GameState.PLAY_CARD;
           break;
         }
         case PLAY_CARD: {
@@ -167,6 +169,8 @@ public class CribbageGame implements Runnable {
         case SCORE_HANDS: {
           int firstScorerIndex = context.table.players.indexOf(context.table.leftOf(context.whoseCrib));
 
+          context.state = GameState.SCORE_CRIB;
+
           for (int i = 0; i < context.table.players.size(); i++) {
             CribbagePlayer player = context.table.players.get((firstScorerIndex + i) % context.table.players.size());
             int handPoints = Scoring.scoreHand(player.getDiscard(), context.cutCard);
@@ -182,8 +186,11 @@ public class CribbageGame implements Runnable {
                 .reason("hand") // could be improved
                 .player(player).build()));
             givePointsAndMaybeEndGame(player, handPoints);
+            if (context.state == GameState.FINISHED) {
+              // TODO UGH
+              break;
+            }
           }
-          context.state = GameState.SCORE_CRIB;
           break;
         }
         case SCORE_CRIB: {
@@ -195,8 +202,8 @@ public class CribbageGame implements Runnable {
               .score(cribPoints)
               .reason("crib") // could be improved
               .player(player).build()));
-          givePointsAndMaybeEndGame(player, cribPoints);
           context.state = GameState.DEAL;
+          givePointsAndMaybeEndGame(player, cribPoints);
           break;
         }
         default: {
@@ -210,6 +217,7 @@ public class CribbageGame implements Runnable {
     player.addPoints(points);
     if (player.getScore() > config.maxScore) {
       callUi(ui -> ui.handle(GameOverEvent.builder().winner(player).build()));
+      // TODO doesn't feel like the best state management to be changing the gamestate in this function
       context.state = GameState.FINISHED;
     }
   }
