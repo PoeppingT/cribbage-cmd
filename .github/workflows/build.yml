@@ -1,0 +1,25 @@
+name: Build Validation
+on:
+  push
+jobs:
+  Build-Java:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v2
+
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Maven Compile, Test, Install
+        run: mvn install -Dcheckstyle.skip -Dspotbugs.skip
+
+      - name: Spotbugs Check
+        run: mvn spotbugs:check
+
+      - name: Code Style Check
+        run: mvn checkstyle:check
