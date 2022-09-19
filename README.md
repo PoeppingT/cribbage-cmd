@@ -1,6 +1,8 @@
 # cribbage-cmd
 Play cribbage on the command line using `java`. Will expand in the future!
 
+![Build](https://github.com/PoeppingT/cribbage-cmd/actions/workflows/build.yml/badge.svg)
+
 ## How to Build
 `mvn clean install`
 
