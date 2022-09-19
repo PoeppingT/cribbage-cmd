@@ -17,7 +17,7 @@ public class Config {
     this.maxScore = b.maxScore;
     this.aiCribFirst = b.aiCribFirst;
     this.aiDifficulty = b.aiDifficulty;
-    this.uiType = UiType.TEXT;
+    this.uiType = b.uiType;
   }
 
   public static Builder builder() {
