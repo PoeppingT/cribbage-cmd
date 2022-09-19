@@ -126,6 +126,8 @@ public final class TextCribbageUi extends CribbageUi {
         return hand.get(indexChoice);
       } catch (NumberFormatException nfe) {
         output(token + " is not a number. Try again.");
+      } catch (IndexOutOfBoundsException ioobe) {
+        output(token + " is not a valid choice. Try again.");
       }
     }
   }
